@@ -33,11 +33,6 @@ class HomeViewModel(
 
     private val weekStartMillis = System.currentTimeMillis() - (WEEK_DAYS - 1L) * 24 * 60 * 60 * 1000
 
-    init {
-        chatRepository.startSync()
-        userProfileRepository.startSync()
-    }
-
     val uiState: StateFlow<UiState<DashboardData>> = combine(
         chatRepository.allChats(),
         chatRepository.questionCount(),

@@ -9,8 +9,9 @@ import kotlinx.coroutines.tasks.await
 
 /**
  * Wraps Firebase Anonymous Auth. There is no login/signup UI anywhere in the app — every device
- * silently gets a persistent Firebase UID on first launch, used as the owner key for every
- * Firestore path (`users/{uid}/...`).
+ * silently gets a persistent UID on first launch. It was the owner key for the Firestore data that
+ * has since been removed; what remains of it is a stable per-device identity for Settings'
+ * sign-out / delete-account actions, and the id any future backend can key a user on.
  */
 class FirebaseAuthGateway(private val auth: FirebaseAuth) {
 

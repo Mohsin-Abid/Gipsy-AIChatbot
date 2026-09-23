@@ -1,0 +1,9 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+
+    <!--
+      Dark counterpart of the launch theme. Without this the window stays light until Compose draws,
+      which shows as a white flash on cold start in dark mode.
+    -->
+    <style name="Theme.AITutor" parent="android:Theme.Material.NoActionBar" />
+</resources>

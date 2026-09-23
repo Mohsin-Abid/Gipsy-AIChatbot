@@ -53,10 +53,6 @@ class ChatHistoryViewModel(private val chatRepository: ChatRepository) : ViewMod
             .catch { emit(UiState.Error(it.message ?: "Couldn't load your chats.", it)) }
             .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), UiState.Loading)
 
-    init {
-        chatRepository.startSync()
-    }
-
     fun onQueryChange(newQuery: String) {
         query.value = newQuery
     }

@@ -85,15 +85,8 @@ class ChatDetailViewModel(
         .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), UiState.Loading)
 
     init {
-        val existingId = args.chatId
-        if (existingId == null) {
-            viewModelScope.launch {
-                val newId = chatRepository.createChat(mode.id)
-                chatIdState.value = newId
-                chatRepository.startSync(newId)
-            }
-        } else {
-            chatRepository.startSync(existingId)
+        if (args.chatId == null) {
+            viewModelScope.launch { chatIdState.value = chatRepository.createChat(mode.id) }
         }
     }
 

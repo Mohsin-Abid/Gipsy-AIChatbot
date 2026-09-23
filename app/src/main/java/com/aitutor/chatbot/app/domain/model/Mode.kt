@@ -19,15 +19,15 @@ import com.aitutor.chatbot.app.ui.theme.CategoryStudyAidsTint
 import com.aitutor.chatbot.app.ui.theme.CategoryWritingTint
 
 enum class ModeCategory(val label: String, val tint: Color) {
-    Chat("Chat", CategoryChatTint),
-    ProblemSolving("Problem Solving", CategoryProblemSolvingTint),
-    Writing("Writing", CategoryWritingTint),
-    StudyAids("Study Aids", CategoryStudyAidsTint),
+    Chat("Chat", CategoryChatTint), ProblemSolving(
+        "Problem Solving",
+        CategoryProblemSolvingTint
+    ),
+    Writing("Writing", CategoryWritingTint), StudyAids("Study Aids", CategoryStudyAidsTint),
 }
 
 enum class ModeId {
-    AiChatbot, HomeworkSolver, MathSolver, NotesSummarizer, AiTutor,
-    GrammarFixer, EssayWriter, Paraphrasing, SummaryGenerator, ConceptExplainer
+    AiChatbot, HomeworkSolver, MathSolver, NotesSummarizer, AiTutor, GrammarFixer, EssayWriter, Paraphrasing, SummaryGenerator, ConceptExplainer
 }
 
 data class Mode(
@@ -37,7 +37,7 @@ data class Mode(
     val category: ModeCategory,
     val icon: ImageVector,
     val inputPlaceholder: String,
-    /** Mode-specific slice of the Gemini system instruction; combined with [BASE_TUTOR_INSTRUCTION] in Phase 2. */
+    /** Mode-specific slice of the system instruction; combined with [BASE_TUTOR_INSTRUCTION] per chat. */
     val instruction: String,
     val usesStructuredOutput: Boolean = false,
     /** Premium-only modes are visible to everyone but open the paywall instead of a chat. */
@@ -46,7 +46,7 @@ data class Mode(
 
 /**
  * Combined with a student-profile context block and each [Mode.instruction] to form the
- * per-chat systemInstruction sent to Gemini (Firebase AI Logic) — wired starting Phase 2.
+ * per-chat system instruction sent to the tutor model.
  */
 const val BASE_TUTOR_INSTRUCTION = """
 You are a patient, encouraging study tutor. Teach through explanation and guided steps rather
@@ -64,9 +64,7 @@ val modes: List<Mode> = listOf(
         category = ModeCategory.Chat,
         icon = Icons.AutoMirrored.Outlined.Chat,
         inputPlaceholder = "Ask me anything…",
-        instruction = "Hold a casual, unstructured study conversation. If the student's message " +
-            "looks like a homework-style question with a specific right answer, offer to switch " +
-            "to Homework Solver mode rather than solving it here."
+        instruction = "Hold a casual, unstructured study conversation. If the student's message " + "looks like a homework-style question with a specific right answer, offer to switch " + "to Homework Solver mode rather than solving it here."
     ),
     Mode(
         id = ModeId.HomeworkSolver,
@@ -75,9 +73,7 @@ val modes: List<Mode> = listOf(
         category = ModeCategory.ProblemSolving,
         icon = Icons.AutoMirrored.Outlined.Assignment,
         inputPlaceholder = "Paste or describe the homework question…",
-        instruction = "Solve as numbered steps, with the reasoning for each step, not just the " +
-            "operation. After the solution, add one unsolved practice question of similar " +
-            "difficulty for the student to try themselves."
+        instruction = "Solve as numbered steps, with the reasoning for each step, not just the " + "operation. After the solution, add one unsolved practice question of similar " + "difficulty for the student to try themselves."
     ),
     Mode(
         id = ModeId.MathSolver,
@@ -86,9 +82,7 @@ val modes: List<Mode> = listOf(
         category = ModeCategory.ProblemSolving,
         icon = Icons.Outlined.Calculate,
         inputPlaceholder = "Type a math question or equation…",
-        instruction = "Structure the response as: Given / Find, then Method, then numbered " +
-            "step-by-step working, then a boxed final answer, then a one-line sanity check of " +
-            "the result.",
+        instruction = "Structure the response as: Given / Find, then Method, then numbered " + "step-by-step working, then a boxed final answer, then a one-line sanity check of " + "the result.",
         usesStructuredOutput = true
     ),
     Mode(
@@ -98,8 +92,7 @@ val modes: List<Mode> = listOf(
         category = ModeCategory.StudyAids,
         icon = Icons.Outlined.Description,
         inputPlaceholder = "Paste your notes…",
-        instruction = "Condense into short bullet notes. Separate out definitions and formulas " +
-            "into their own clearly labelled sub-sections rather than mixing them into prose.",
+        instruction = "Condense into short bullet notes. Separate out definitions and formulas " + "into their own clearly labelled sub-sections rather than mixing them into prose.",
         isPremium = true
     ),
     Mode(
@@ -109,8 +102,7 @@ val modes: List<Mode> = listOf(
         category = ModeCategory.Chat,
         icon = Icons.AutoMirrored.Outlined.MenuBook,
         inputPlaceholder = "What are you working on?",
-        instruction = "Run a sequential explain → example → practice → check loop. Never solve " +
-            "the student's original question directly — guide them to the answer through that loop.",
+        instruction = "Run a sequential explain → example → practice → check loop. Never solve " + "the student's original question directly — guide them to the answer through that loop.",
         isPremium = true
     ),
     Mode(
@@ -120,8 +112,7 @@ val modes: List<Mode> = listOf(
         category = ModeCategory.Writing,
         icon = Icons.Outlined.Spellcheck,
         inputPlaceholder = "Paste the text to correct…",
-        instruction = "Return the corrected text in full, followed by a list of each change made " +
-            "and a short reason for it."
+        instruction = "Return the corrected text in full, followed by a list of each change made " + "and a short reason for it."
     ),
     Mode(
         id = ModeId.EssayWriter,
@@ -130,8 +121,7 @@ val modes: List<Mode> = listOf(
         category = ModeCategory.Writing,
         icon = Icons.Outlined.EditNote,
         inputPlaceholder = "What's the essay topic or prompt?",
-        instruction = "Provide an outline and exactly one fully-written model paragraph — never a " +
-            "complete essay. Coach the student through writing the remaining paragraphs themselves.",
+        instruction = "Provide an outline and exactly one fully-written model paragraph — never a " + "complete essay. Coach the student through writing the remaining paragraphs themselves.",
         isPremium = true
     ),
     Mode(
@@ -141,9 +131,7 @@ val modes: List<Mode> = listOf(
         category = ModeCategory.Writing,
         icon = Icons.Outlined.Shuffle,
         inputPlaceholder = "Paste the text to paraphrase…",
-        instruction = "Reword the passage at roughly the same length in the tone the student " +
-            "requests (default: neutral/academic). This is a rewrite, not a summary — preserve " +
-            "every point made in the original.",
+        instruction = "Reword the passage at roughly the same length in the tone the student " + "requests (default: neutral/academic). This is a rewrite, not a summary — preserve " + "every point made in the original.",
         isPremium = true
     ),
     Mode(
@@ -153,8 +141,7 @@ val modes: List<Mode> = listOf(
         category = ModeCategory.StudyAids,
         icon = Icons.Outlined.Summarize,
         inputPlaceholder = "Paste the article or chapter…",
-        instruction = "Write a plain-paragraph summary at the student's requested length " +
-            "(default: medium) — prose, not bullet-point notes formatting.",
+        instruction = "Write a plain-paragraph summary at the student's requested length " + "(default: medium) — prose, not bullet-point notes formatting.",
         isPremium = true
     ),
     Mode(
@@ -164,7 +151,6 @@ val modes: List<Mode> = listOf(
         category = ModeCategory.StudyAids,
         icon = Icons.Outlined.Lightbulb,
         inputPlaceholder = "What concept do you want explained?",
-        instruction = "Give a short definition, then an analogy, then a real-world example, then " +
-            "one line on why it matters/where it's used."
+        instruction = "Give a short definition, then an analogy, then a real-world example, then " + "one line on why it matters/where it's used."
     ),
 )

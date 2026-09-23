@@ -1,9 +1,13 @@
 package com.aitutor.chatbot.app.ui
 
 import androidx.compose.foundation.isSystemInDarkTheme
+import androidx.compose.foundation.layout.fillMaxSize
+import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.Surface
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.CompositionLocalProvider
 import androidx.compose.runtime.getValue
+import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.unit.Density
 import com.aitutor.chatbot.app.core.ext.collectAsLifecycleAwareState
@@ -36,7 +40,12 @@ fun AiTutorRoot() {
     val baseDensity = LocalDensity.current
     CompositionLocalProvider(LocalDensity provides Density(density = baseDensity.density, fontScale = 1f)) {
         AITutorTheme(darkTheme = darkTheme, typography = Typography.scaled(fontScale)) {
-            AppNavHost()
+            // The window background comes from the XML theme, which can't follow the in-app theme
+            // override — so every destination sits on a themed Surface instead. Without this, any
+            // screen that doesn't paint its own background shows white in dark mode.
+            Surface(modifier = Modifier.fillMaxSize(), color = MaterialTheme.colorScheme.background) {
+                AppNavHost()
+            }
         }
     }
 }

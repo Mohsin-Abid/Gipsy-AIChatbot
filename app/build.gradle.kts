@@ -64,11 +64,9 @@ dependencies {
     implementation(libs.koin.android)
     implementation(libs.koin.androidx.compose)
 
-    // Firebase — Anonymous Auth, Firestore, AI Logic (Gemini)
+    // Firebase — Anonymous Auth
     implementation(platform(libs.firebase.bom))
     implementation(libs.firebase.auth)
-    implementation(libs.firebase.firestore)
-    implementation(libs.firebase.ai)
     implementation(libs.kotlinx.coroutines.play.services)
 
     // Local offline cache for chats/messages

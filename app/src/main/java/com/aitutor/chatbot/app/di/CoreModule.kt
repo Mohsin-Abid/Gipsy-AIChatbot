@@ -1,6 +1,7 @@
 package com.aitutor.chatbot.app.di
 
-import com.aitutor.chatbot.app.data.ai.GeminiService
+import com.aitutor.chatbot.app.data.ai.NotConfiguredAiClient
+import com.aitutor.chatbot.app.data.ai.TutorAiClient
 import com.aitutor.chatbot.app.data.chat.ChatRepository
 import com.aitutor.chatbot.app.data.firebase.ReportRepository
 import com.aitutor.chatbot.app.data.firebase.UserProfileRepository
@@ -12,10 +13,11 @@ import org.koin.dsl.module
 
 val coreModule = module {
     single { UserPreferencesRepository(androidContext()) }
-    single { GeminiService() }
-    single { ChatRepository(get(), get(), get(), get(), get(), get()) }
-    single { ReportRepository(get(), get()) }
-    single { UserProfileRepository(get(), get(), get()) }
+    // Swap this binding for the custom API client once it exists; nothing else has to change.
+    single<TutorAiClient> { NotConfiguredAiClient() }
+    single { ChatRepository(get(), get(), get(), get()) }
+    single { ReportRepository() }
+    single { UserProfileRepository(get()) }
     single { TtsManager(androidContext()) }
     single { ImageTextExtractor(androidContext()) }
 }

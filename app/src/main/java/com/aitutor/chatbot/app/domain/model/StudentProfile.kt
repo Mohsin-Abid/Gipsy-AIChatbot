@@ -12,7 +12,7 @@ import androidx.compose.material.icons.outlined.Science
 import androidx.compose.material.icons.outlined.Translate
 import androidx.compose.ui.graphics.vector.ImageVector
 
-/** [promptLabel] is what actually reaches Gemini — the UI label is written for students, not models. */
+/** [promptLabel] is what actually reaches the model — the UI label is written for students, not models. */
 enum class GradeLevel(val label: String, val caption: String, val promptLabel: String) {
     Elementary("Grades 1–5", "Primary school", "elementary school (grades 1-5)"),
     MiddleSchool("Grades 6–8", "Middle school", "middle school (grades 6-8)"),
@@ -71,7 +71,7 @@ data class StudentProfile(
             subjects.takeIf { it.isNotEmpty() }?.joinToString(", ") { it.label },
         ).joinToString(" · ").ifBlank { "Set up your learning profile" }
 
-    /** The block handed to Gemini. Empty when nothing was collected, so no fake context is invented. */
+    /** The block handed to the model. Empty when nothing was collected, so no fake context is invented. */
     fun toPromptBlock(): String {
         if (!isSet) return ""
         val parts = buildList {
