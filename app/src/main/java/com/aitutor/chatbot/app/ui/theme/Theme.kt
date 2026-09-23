@@ -2,6 +2,7 @@ package com.aitutor.chatbot.app.ui.theme
 
 import androidx.compose.foundation.isSystemInDarkTheme
 import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.Typography
 import androidx.compose.material3.darkColorScheme
 import androidx.compose.material3.lightColorScheme
 import androidx.compose.runtime.Composable
@@ -87,6 +88,7 @@ private val DarkColorScheme = darkColorScheme(
 @Composable
 fun AITutorTheme(
     darkTheme: Boolean = isSystemInDarkTheme(),
+    typography: Typography = com.aitutor.chatbot.app.ui.theme.Typography,
     content: @Composable () -> Unit
 ) {
     val colorScheme = if (darkTheme) DarkColorScheme else LightColorScheme
@@ -94,7 +96,7 @@ fun AITutorTheme(
     CompositionLocalProvider(LocalSpacing provides Spacing()) {
         MaterialTheme(
             colorScheme = colorScheme,
-            typography = Typography,
+            typography = typography,
             shapes = Shapes,
             content = content
         )

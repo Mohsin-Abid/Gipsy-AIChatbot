@@ -98,3 +98,37 @@ val NumeralStyle = TextStyle(
     letterSpacing = 0.sp,
     fontFeatureSettings = TabularFigures
 )
+
+/**
+ * Applies the user's in-app font-scale setting (Settings > Font Size) to
+ * every text style. This is the ONLY place text size scales from — device
+ * accessibility font scale is neutralized at the app root, see [AITutorTheme].
+ */
+fun Typography.scaled(multiplier: Float): Typography {
+    fun TextStyle.scale() = copy(fontSize = fontSize * multiplier, lineHeight = lineHeight * multiplier)
+    return copy(
+        displayLarge = displayLarge.scale(),
+        displayMedium = displayMedium.scale(),
+        displaySmall = displaySmall.scale(),
+        headlineLarge = headlineLarge.scale(),
+        headlineMedium = headlineMedium.scale(),
+        headlineSmall = headlineSmall.scale(),
+        titleLarge = titleLarge.scale(),
+        titleMedium = titleMedium.scale(),
+        titleSmall = titleSmall.scale(),
+        bodyLarge = bodyLarge.scale(),
+        bodyMedium = bodyMedium.scale(),
+        bodySmall = bodySmall.scale(),
+        labelLarge = labelLarge.scale(),
+        labelMedium = labelMedium.scale(),
+        labelSmall = labelSmall.scale(),
+    )
+}
+
+/** Bounds for the in-app Font Size stepper in Settings. */
+object FontScale {
+    const val MIN = 0.85f
+    const val MAX = 1.4f
+    const val STEP = 0.05f
+    const val DEFAULT = 1f
+}

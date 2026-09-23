@@ -14,6 +14,8 @@ import androidx.compose.ui.unit.dp
 object AppShapes {
     val Row = RoundedCornerShape(10.dp)
     val Card = RoundedCornerShape(16.dp)
+    /** The dashboard's feature surfaces — hero, upgrade card, stat tiles. */
+    val CardLarge = RoundedCornerShape(24.dp)
     val Pill = CircleShape
     val PillLarge = RoundedCornerShape(28.dp)
 }

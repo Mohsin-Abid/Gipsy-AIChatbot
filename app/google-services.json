@@ -1,0 +1,30 @@
+{
+  "_comment": "PLACEHOLDER — replace this entire file with the real google-services.json downloaded from your Firebase console (project settings > your Android app, package com.aitutor.chatbot.app). Anonymous Auth, Firestore, and Firebase AI Logic will not work until this is replaced.",
+  "project_info": {
+    "project_number": "000000000000",
+    "project_id": "REPLACE_ME-project-id",
+    "storage_bucket": "REPLACE_ME-project-id.appspot.com"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:000000000000:android:0000000000000000000000",
+        "android_client_info": {
+          "package_name": "com.aitutor.chatbot.app"
+        }
+      },
+      "oauth_client": [],
+      "api_key": [
+        {
+          "current_key": "REPLACE_ME_api_key"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": []
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}
