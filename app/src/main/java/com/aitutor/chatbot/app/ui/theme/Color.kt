@@ -3,64 +3,105 @@ package com.aitutor.chatbot.app.ui.theme
 import androidx.compose.ui.graphics.Color
 
 /**
- * Minimal black/white/grey palette per the design spec — no dynamic color.
- * One restrained accent is spent only on CTAs, selected states, and active
- * mode cards. Category tints on the Home mode grid are a separate, muted
- * use of color for at-a-glance scanning, not the CTA accent.
+ * Every colour in the app, in one place. Screens never hold a literal hex — they read a role off
+ * [AppColors] via `MaterialTheme.appColors`, so a palette change happens here and nowhere else.
+ *
+ * Values are taken from the AI Study Dashboard design. The accent-derived tints are pre-computed
+ * from the design's own formulas: light mixes the accent toward white, dark toward the page.
  */
 
-// ---- Light ----
+// ---- Brand accent -------------------------------------------------------------------------
+val Accent = Color(0xFF3446D1)
+val AccentPressed = Color(0xFF2433A8)
+
+/** The design offers these as alternates; kept so a future theme switch has somewhere to point. */
+val AccentTeal = Color(0xFF1F6F8B)
+val AccentViolet = Color(0xFF5B3FB8)
+val AccentGreen = Color(0xFF0F7A6C)
+
+// ---- Light --------------------------------------------------------------------------------
 val LightBackground = Color(0xFFFFFFFF)
-val LightSurfaceVariant = Color(0xFFF5F5F5)
-val LightBorder = Color(0xFFEEEEEE)
+val LightSurface = Color(0xFFFFFFFF)
+val LightSurfaceMuted = Color(0xFFF7F8FE)
+val LightTextPrimary = Color(0xFF0F1222)
+val LightTextSecondary = Color(0xFF545A6B)
+val LightTextTertiary = Color(0xFF6B7080)
+val LightAccentTint = Color(0xFFEBECFA)
+val LightAccentRing = Color(0xFFD2D6F5)
+val LightOnAccentMuted = Color(0xFFDFE2F8)
+val LightCardBorder = Color(0x0F0F1222)
+val LightPageTint = Color(0xFFF5F6FD)
+val LightFieldBorder = Color(0xFFE7E9FA)
+val LightRadioOff = Color(0xFFCDD1DC)
+val LightAccentTintStrong = Color(0xFFE3E5F9)
+val LightAccentDeep = Color(0xFF1B246D)
+val LightSurfaceRaised = Color(0xFFFFFFFF)
 
-val LightTextPrimary = Color(0xFF000000)
-val LightTextSecondary = Color(0xFF6B7280)
-val LightTextTertiary = Color(0xFF9CA3AF)
+// ---- Dark ---------------------------------------------------------------------------------
+val DarkBackground = Color(0xFF0B0D17)
+val DarkSurface = Color(0xFF151827)
+val DarkSurfaceMuted = Color(0xFF151827)
+val DarkTextPrimary = Color(0xFFF2F3F8)
+val DarkTextSecondary = Color(0xFFA4A9BC)
+val DarkTextTertiary = Color(0xFF8A90A6)
+val DarkAccentText = Color(0xFF8F99E6)
+/** Subtitles on the hero: cooler than the light theme's, since the hero itself is deepened. */
+val DarkOnAccentMuted = Color(0xFFD3D7F3)
+val DarkHero = Color(0xFF2A38A7)
+val DarkAccentTint = Color(0x2E3446D1)
+val DarkAccentRing = Color(0x573446D1)
+val DarkCardBorder = Color(0x12FFFFFF)
+val DarkPageTint = Color(0xFF0B0D17)
+val DarkFieldBorder = Color(0x12FFFFFF)
+val DarkRadioOff = Color(0x2EFFFFFF)
+val DarkAccentTintStrong = Color(0x2E3446D1)
+val DarkAccentDeep = Color(0xFF1A2368)
+/** Dark mode has two card levels: flat cards sit on [DarkSurface], lifted ones on this. */
+val DarkSurfaceRaised = Color(0xFF1B1F33)
 
-val LightPrimary = Color(0xFF2856E0)
-val LightOnPrimary = Color(0xFFFFFFFF)
-val LightPrimaryContainer = Color(0xFFE4EAFC)
-val LightOnPrimaryContainer = Color(0xFF1A3FBF)
+// ---- Shared -------------------------------------------------------------------------------
+val Coral = Color(0xFFFF6B5E)
+val OnAccent = Color(0xFFFFFFFF)
 
-val LightError = Color(0xFFDC2626)
-val LightErrorContainer = Color(0xFFFDECEC)
+// Destructive actions — "Log out" is the only one so far, and it is a tinted chip plus red label
+// rather than a filled red button, so the role needs both a foreground and its wash.
+val LightDanger = Color(0xFFC0352B)
+val LightDangerTint = Color(0xFFFDECEC)
+val DarkDanger = Color(0xFFFF7A70)
+val DarkDangerTint = Color(0x24FF7A70)
 
-// ---- Dark ----
-val DarkBackground = Color(0xFF121212)
-val DarkSurfaceVariant = Color(0xFF1E1E1E)
-val DarkBorder = Color(0xFF2C2C2C)
+// Chat sheets, menus and text selection.
+/** The drag handle at the top of a bottom sheet. */
+val LightSheetGrip = Color(0xFFD9DCE5)
+val DarkSheetGrip = Color(0x33FFFFFF)
+/** The floating bar above selected text. Near-black in light, a lifted slate in dark. */
+val LightSelectionBar = Color(0xFF0F1222)
+val DarkSelectionBar = Color(0xFF262B45)
 
-val DarkTextPrimary = Color(0xFFFFFFFF)
-val DarkTextSecondary = Color(0xFFA0A3AA)
-val DarkTextTertiary = Color(0xFF74777E)
+/** What sits behind a sheet or a menu. One colour, two strengths — see [ScrimStrength]. */
+val Scrim = Color(0xFF060814)
 
-val DarkPrimary = Color(0xFF6D93FF)
-val DarkOnPrimary = Color(0xFF0B1636)
-val DarkPrimaryContainer = Color(0xFF22345E)
-val DarkOnPrimaryContainer = Color(0xFFB9CCFF)
+/** How opaque the scrim is: a full-width sheet dims more than a small anchored menu. */
+object ScrimStrength {
+    const val Sheet = 0.52f
+    const val Menu = 0.28f
+}
 
-val DarkError = Color(0xFFF87171)
-val DarkErrorContainer = Color(0xFF3A1F1F)
+/** The live-recording dot. Same in both themes — it has to read as a warning, not as a tint. */
+val Recording = Color(0xFFF0503C)
 
-// ---- Mode-category tints (Home grid icon accents only — muted, not CTA color) ----
-val CategoryChatTint = Color(0xFF2856E0)
-val CategoryProblemSolvingTint = Color(0xFF9333EA)
-val CategoryWritingTint = Color(0xFFD97706)
-val CategoryStudyAidsTint = Color(0xFF059669)
+/** The off state of a switch track. Deliberately not [LightRadioOff]: a track reads heavier. */
+val LightSwitchTrackOff = Color(0xFFD6D9E2)
+val DarkSwitchTrackOff = Color(0xFF2E3350)
 
-/**
- * Premium signifiers only — PRO badges, the upgrade surfaces, the plan row in Settings. Kept apart
- * from the CTA accent so "this costs money" never reads the same as "this is the next action".
- */
-val PremiumGold = Color(0xFFB8860B)
-val PremiumGoldBright = Color(0xFFE8B931)
-val PremiumGoldSoft = Color(0xFFFBF1D8)
-val PremiumInkStart = Color(0xFF1B1D26)
-val PremiumInkEnd = Color(0xFF32243A)
-
-// ---- Hero gradient (the one large "ask anything" surface on the dashboard) ----
-val HeroGradientStart = Color(0xFF2856E0)
-val HeroGradientEnd = Color(0xFF6D3BD4)
-val HeroGradientStartDark = Color(0xFF2B3C7A)
-val HeroGradientEndDark = Color(0xFF442C6B)
+/** Translucent whites used on top of the accent hero, where the backdrop is the same in both themes. */
+object OnHero {
+    val Text = Color(0xFFFFFFFF)
+    val Fill = Color(0x29FFFFFF)
+    val FillSoft = Color(0x24FFFFFF)
+    val FillFaint = Color(0x21FFFFFF)
+    val Stroke = Color(0x33FFFFFF)
+    val StrokeSoft = Color(0x1FFFFFFF)
+    val RingStrong = Color(0x1FFFFFFF)
+    val RingSoft = Color(0x1AFFFFFF)
+}

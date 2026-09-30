@@ -2,115 +2,51 @@ package com.aitutor.chatbot.app.ui.home
 
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
-import com.aitutor.chatbot.app.core.state.UiState
-import com.aitutor.chatbot.app.data.chat.ChatRepository
-import com.aitutor.chatbot.app.data.firebase.UserProfileRepository
-import com.aitutor.chatbot.app.data.local.UserPreferencesRepository
+import com.aitutor.chatbot.app.data.prefs.UserPreferencesRepository
+import com.aitutor.chatbot.app.data.repository.ChatRepository
+import com.aitutor.chatbot.app.domain.model.HistoryEntry
 import com.aitutor.chatbot.app.domain.model.StudentProfile
-import com.aitutor.chatbot.app.domain.model.modes
-import com.aitutor.chatbot.app.domain.model.recommendationsFor
+import com.aitutor.chatbot.app.ui.history.toEntry
 import kotlinx.coroutines.flow.SharingStarted
 import kotlinx.coroutines.flow.StateFlow
-import kotlinx.coroutines.flow.catch
 import kotlinx.coroutines.flow.combine
-import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.flow.stateIn
-import kotlinx.coroutines.launch
-import java.time.Instant
-import java.time.LocalDate
-import java.time.ZoneId
-import java.time.format.TextStyle
-import java.util.Calendar
-import java.util.Locale
 
-private const val WEEK_DAYS = 7
+/**
+ * What the dashboard draws.
+ *
+ * [recent] is the conversation the "continue" card resumes, and it is simply the first of
+ * [activity] — Home shows the same list twice at different weights, so deriving one from the other
+ * keeps them from ever disagreeing.
+ */
+data class HomeUiState(
+    val profile: StudentProfile = StudentProfile(),
+    val activity: List<HistoryEntry> = emptyList(),
+) {
+    val recent: HistoryEntry? get() = activity.firstOrNull()
+}
 
 class HomeViewModel(
-    private val chatRepository: ChatRepository,
-    private val userProfileRepository: UserProfileRepository,
-    private val preferencesRepository: UserPreferencesRepository,
+    chats: ChatRepository,
+    preferences: UserPreferencesRepository,
+    now: () -> Long = System::currentTimeMillis,
 ) : ViewModel() {
 
-    private val weekStartMillis = System.currentTimeMillis() - (WEEK_DAYS - 1L) * 24 * 60 * 60 * 1000
-
-    val uiState: StateFlow<UiState<DashboardData>> = combine(
-        chatRepository.allChats(),
-        chatRepository.questionCount(),
-        chatRepository.questionTimestampsSince(weekStartMillis),
-        userProfileRepository.plan,
-        preferencesRepository.studentProfile,
-    ) { chats, questionCount, weekTimestamps, plan, profile ->
-        val chatTimestamps = chats.map { it.timestampMillis }
-        DashboardData(
-            greeting = buildGreeting(),
-            profile = profile,
-            plan = plan,
-            modes = modes,
-            recommendations = recommendationsFor(profile),
-            recentChats = chats.take(6),
-            weeklyActivity = buildWeeklyActivity(weekTimestamps),
-            streakDays = computeStreakDays(chatTimestamps),
-            questionsAsked = questionCount,
-            chatsThisWeek = chatTimestamps.count { it >= weekStartMillis },
-        )
-    }
-        .map<DashboardData, UiState<DashboardData>> { UiState.Success(it) }
-        .catch { emit(UiState.Error(it.message ?: "Couldn't load your dashboard.", it)) }
-        .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), UiState.Loading)
-
-    fun onProfileUpdated(profile: StudentProfile) {
-        viewModelScope.launch { preferencesRepository.setStudentProfile(profile) }
-    }
-
-    private fun buildGreeting(): String {
-        val hour = Calendar.getInstance().get(Calendar.HOUR_OF_DAY)
-        val timeOfDay = when (hour) {
-            in 5..11 -> "morning"
-            in 12..16 -> "afternoon"
-            in 17..20 -> "evening"
-            else -> "night"
-        }
-        return "Good $timeOfDay"
-    }
-
-    /** Oldest-to-newest buckets so the chart reads left-to-right, ending on today. */
-    private fun buildWeeklyActivity(timestamps: List<Long>): List<DayActivity> {
-        val zone = ZoneId.systemDefault()
-        val today = LocalDate.now(zone)
-        val countsByDay = timestamps
-            .map { Instant.ofEpochMilli(it).atZone(zone).toLocalDate() }
-            .groupingBy { it }
-            .eachCount()
-
-        return (WEEK_DAYS - 1 downTo 0).map { daysAgo ->
-            val day = today.minusDays(daysAgo.toLong())
-            DayActivity(
-                label = day.dayOfWeek.getDisplayName(TextStyle.NARROW, Locale.getDefault()),
-                count = countsByDay[day] ?: 0,
-                isToday = day == today,
+    val state: StateFlow<HomeUiState> =
+        combine(chats.observeHeaders(), preferences.settings) { headers, settings ->
+            HomeUiState(
+                profile = settings.profile,
+                activity = headers.take(ACTIVITY_LIMIT).map { it.toEntry(now()) },
             )
-        }
-    }
+        }.stateIn(
+            scope = viewModelScope,
+            started = SharingStarted.WhileSubscribed(STOP_TIMEOUT_MS),
+            initialValue = HomeUiState(),
+        )
 
-    /**
-     * Consecutive days ending today (or yesterday, so the streak survives until the day is over)
-     * on which this student studied at least once.
-     */
-    private fun computeStreakDays(timestamps: List<Long>): Int {
-        if (timestamps.isEmpty()) return 0
-        val zone = ZoneId.systemDefault()
-        val activeDays = timestamps
-            .map { Instant.ofEpochMilli(it).atZone(zone).toLocalDate().toEpochDay() }
-            .distinct()
-            .sortedDescending()
-
-        val today = LocalDate.now(zone).toEpochDay()
-        if (activeDays.first() < today - 1) return 0
-
-        var streak = 1
-        for (index in 1 until activeDays.size) {
-            if (activeDays[index] == activeDays[index - 1] - 1) streak++ else break
-        }
-        return streak
+    private companion object {
+        /** Home is a summary, not the history screen — it lists a handful and links to the rest. */
+        const val ACTIVITY_LIMIT = 3
+        const val STOP_TIMEOUT_MS = 5_000L
     }
 }

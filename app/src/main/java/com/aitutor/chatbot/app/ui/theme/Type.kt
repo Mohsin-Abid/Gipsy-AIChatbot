@@ -2,44 +2,77 @@ package com.aitutor.chatbot.app.ui.theme
 
 import androidx.compose.material3.Typography
 import androidx.compose.ui.text.TextStyle
+import androidx.compose.ui.text.font.Font
+import androidx.compose.ui.text.font.FontFamily
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.sp
+import com.aitutor.chatbot.app.R
+
+/** Inter, bundled — the design's only typeface. */
+val InterFamily = FontFamily(
+    Font(R.font.inter_regular, FontWeight.Normal),
+    Font(R.font.inter_medium, FontWeight.Medium),
+    Font(R.font.inter_semibold, FontWeight.SemiBold),
+    Font(R.font.inter_bold, FontWeight.Bold),
+)
 
 /**
- * One typeface, Inter, for everything. Hierarchy comes from size and weight
- * contrast, not from switching fonts.
+ * The design's type ramp, mapped onto Material 3's slots so `MaterialTheme.typography` stays the
+ * single source. Negative tracking on the large sizes is what gives the headlines their tight,
+ * modern set — it is part of the design, not a default.
  */
-val Typography = Typography(
-    // The one large greeting moment on Home.
+val AppTypography = Typography(
+    // Splash wordmark.
+    displayMedium = TextStyle(
+        fontFamily = InterFamily,
+        fontWeight = FontWeight.Bold,
+        fontSize = 34.sp,
+        lineHeight = 40.sp,
+        letterSpacing = (-1.19).sp,
+    ),
+    // Onboarding and screen headlines.
     displaySmall = TextStyle(
         fontFamily = InterFamily,
-        fontWeight = FontWeight.SemiBold,
-        fontSize = 26.sp,
-        lineHeight = 32.sp,
-        letterSpacing = (-0.3).sp
+        fontWeight = FontWeight.Bold,
+        fontSize = 28.sp,
+        lineHeight = 34.sp,
+        letterSpacing = (-0.98).sp,
     ),
-    // Every screen's single H1.
+    headlineMedium = TextStyle(
+        fontFamily = InterFamily,
+        fontWeight = FontWeight.Bold,
+        fontSize = 30.sp,
+        lineHeight = 36.sp,
+        letterSpacing = (-0.6).sp,
+    ),
     headlineSmall = TextStyle(
         fontFamily = InterFamily,
-        fontWeight = FontWeight.SemiBold,
+        fontWeight = FontWeight.Bold,
         fontSize = 20.sp,
         lineHeight = 26.sp,
-        letterSpacing = (-0.2).sp
+        letterSpacing = (-0.3).sp,
     ),
-    // Row / list-item titles.
+    titleLarge = TextStyle(
+        fontFamily = InterFamily,
+        fontWeight = FontWeight.Bold,
+        fontSize = 17.sp,
+        lineHeight = 22.sp,
+        letterSpacing = (-0.2).sp,
+    ),
+    // Buttons and the logo wordmark.
     titleMedium = TextStyle(
         fontFamily = InterFamily,
-        fontWeight = FontWeight.Medium,
-        fontSize = 15.sp,
-        lineHeight = 20.sp,
-        letterSpacing = 0.sp
+        fontWeight = FontWeight.Bold,
+        fontSize = 16.sp,
+        lineHeight = 22.sp,
+        letterSpacing = (-0.16).sp,
     ),
     titleSmall = TextStyle(
         fontFamily = InterFamily,
-        fontWeight = FontWeight.Medium,
-        fontSize = 14.sp,
-        lineHeight = 19.sp,
-        letterSpacing = 0.sp
+        fontWeight = FontWeight.Bold,
+        fontSize = 15.sp,
+        lineHeight = 20.sp,
+        letterSpacing = (-0.22).sp,
     ),
     // Reading text.
     bodyLarge = TextStyle(
@@ -47,88 +80,55 @@ val Typography = Typography(
         fontWeight = FontWeight.Normal,
         fontSize = 15.sp,
         lineHeight = 22.sp,
-        letterSpacing = 0.sp
     ),
     bodyMedium = TextStyle(
         fontFamily = InterFamily,
         fontWeight = FontWeight.Normal,
         fontSize = 14.sp,
-        lineHeight = 20.sp,
-        letterSpacing = 0.sp
+        lineHeight = 21.sp,
     ),
     bodySmall = TextStyle(
         fontFamily = InterFamily,
         fontWeight = FontWeight.Normal,
-        fontSize = 12.5.sp,
-        lineHeight = 17.sp,
-        letterSpacing = 0.sp
+        fontSize = 13.sp,
+        lineHeight = 18.sp,
     ),
-    // Buttons.
+    // Row titles inside cards.
     labelLarge = TextStyle(
         fontFamily = InterFamily,
-        fontWeight = FontWeight.Medium,
-        fontSize = 14.sp,
+        fontWeight = FontWeight.SemiBold,
+        fontSize = 13.5.sp,
         lineHeight = 18.sp,
-        letterSpacing = 0.sp
     ),
-    // Timestamps, metadata.
+    // Badges, chips, captions.
     labelMedium = TextStyle(
         fontFamily = InterFamily,
-        fontWeight = FontWeight.Normal,
-        fontSize = 12.sp,
+        fontWeight = FontWeight.SemiBold,
+        fontSize = 12.5.sp,
         lineHeight = 16.sp,
-        letterSpacing = 0.sp
     ),
-    // Section labels ("TODAY", "ACCOUNT").
     labelSmall = TextStyle(
         fontFamily = InterFamily,
-        fontWeight = FontWeight.Medium,
+        fontWeight = FontWeight.SemiBold,
         fontSize = 12.sp,
         lineHeight = 16.sp,
-        letterSpacing = 0.2.sp
     ),
 )
 
-/** A tabular numeral for figures that change (streak days, XP). */
-val NumeralStyle = TextStyle(
+/** The uppercase micro-label above a figure ("SOLVE FOR X"). Wide tracking is the whole effect. */
+val OverlineStyle = TextStyle(
     fontFamily = InterFamily,
-    fontWeight = FontWeight.SemiBold,
-    fontSize = 20.sp,
-    lineHeight = 24.sp,
-    letterSpacing = 0.sp,
-    fontFeatureSettings = TabularFigures
+    fontWeight = FontWeight.Bold,
+    fontSize = 11.sp,
+    lineHeight = 14.sp,
+    letterSpacing = 0.88.sp,
 )
 
-/**
- * Applies the user's in-app font-scale setting (Settings > Font Size) to
- * every text style. This is the ONLY place text size scales from — device
- * accessibility font scale is neutralized at the app root, see [AITutorTheme].
- */
-fun Typography.scaled(multiplier: Float): Typography {
-    fun TextStyle.scale() = copy(fontSize = fontSize * multiplier, lineHeight = lineHeight * multiplier)
-    return copy(
-        displayLarge = displayLarge.scale(),
-        displayMedium = displayMedium.scale(),
-        displaySmall = displaySmall.scale(),
-        headlineLarge = headlineLarge.scale(),
-        headlineMedium = headlineMedium.scale(),
-        headlineSmall = headlineSmall.scale(),
-        titleLarge = titleLarge.scale(),
-        titleMedium = titleMedium.scale(),
-        titleSmall = titleSmall.scale(),
-        bodyLarge = bodyLarge.scale(),
-        bodyMedium = bodyMedium.scale(),
-        bodySmall = bodySmall.scale(),
-        labelLarge = labelLarge.scale(),
-        labelMedium = labelMedium.scale(),
-        labelSmall = labelSmall.scale(),
-    )
-}
-
-/** Bounds for the in-app Font Size stepper in Settings. */
-object FontScale {
-    const val MIN = 0.85f
-    const val MAX = 1.4f
-    const val STEP = 0.05f
-    const val DEFAULT = 1f
-}
+/** The uppercase label that heads a group of rows. A step up from [OverlineStyle], which badges. */
+val SectionOverlineStyle = TextStyle(
+    fontFamily = InterFamily,
+    fontWeight = FontWeight.Bold,
+    fontSize = 12.sp,
+    lineHeight = 16.sp,
+    letterSpacing = 0.84.sp,
+)

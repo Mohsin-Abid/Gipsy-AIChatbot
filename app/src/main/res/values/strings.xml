@@ -1,3 +1,420 @@
+<?xml version="1.0" encoding="utf-8"?>
 <resources>
     <string name="app_name">AI Tutor</string>
+
+    <!-- Splash -->
+    <string name="splash_tagline">Your AI study companion</string>
+    <string name="splash_loading">Preparing your study space…</string>
+    <string name="cd_loading">Loading</string>
+
+    <!-- Shared -->
+    <string name="ai_tutor_label">AI Tutor</string>
+    <string name="cd_next">Next</string>
+    <string name="action_skip">Skip</string>
+
+    <!-- Onboarding -->
+    <string name="onboarding_step_badge">%1$d of %2$d</string>
+    <string name="cd_onboarding_step">Step %1$d of %2$d</string>
+
+    <string name="onboarding_1_title">Ask anything,\nget clear answers</string>
+    <string name="onboarding_1_body">Chat with your AI study assistant about any subject, any time. It explains the why, not just the answer.</string>
+    <string name="onboarding_1_question">Why is the sky blue?</string>
+    <string name="onboarding_1_answer">Sunlight scatters when it hits air molecules. Blue light has a shorter wavelength, so it scatters the most — and fills the sky.</string>
+    <string name="onboarding_1_chip_simpler">Explain simpler</string>
+    <string name="onboarding_1_chip_example">Give an example</string>
+
+    <string name="onboarding_2_title">Snap your homework,\nlearn every step</string>
+    <string name="onboarding_2_body">Scan a question from your notebook, a photo or a PDF and get a clear, step-by-step solution.</string>
+    <string name="onboarding_2_scanned">Scanned from your notebook</string>
+    <string name="onboarding_2_problem_label">Solve for x</string>
+    <string name="onboarding_2_problem">2x + 5 = 17</string>
+    <string name="onboarding_2_step_1">Subtract 5 from both sides</string>
+    <string name="onboarding_2_step_1_result">2x = 12</string>
+    <string name="onboarding_2_step_2">Divide both sides by 2</string>
+    <string name="onboarding_2_step_2_result">x = 6</string>
+
+    <string name="onboarding_3_title">Every study tool,\nin one place</string>
+    <string name="onboarding_3_body">Summaries, essays, grammar, math and more, built for school, college and university.</string>
+    <string name="onboarding_3_tools_badge">10 AI study tools</string>
+    <string name="onboarding_3_cta">Get started</string>
+    <string name="onboarding_3_no_signup">No sign-up needed</string>
+
+    <!-- Language -->
+    <string name="language_title">Choose your language</string>
+    <string name="language_subtitle">Used for the app and for AI answers. You can change it later in Settings.</string>
+    <string name="language_search_hint">Search languages</string>
+    <string name="language_device_default">Device language</string>
+    <string name="language_answers_in">AI answers will be in</string>
+    <string name="language_continue">Continue</string>
+    <string name="language_empty">No languages match that search.</string>
+
+    <string name="lang_english">English</string>
+    <string name="lang_spanish">Spanish</string>
+    <string name="lang_french">French</string>
+    <string name="lang_german">German</string>
+    <string name="lang_portuguese">Portuguese</string>
+    <string name="lang_turkish">Turkish</string>
+    <string name="lang_indonesian">Indonesian</string>
+    <string name="lang_hindi">Hindi</string>
+    <string name="lang_urdu">Urdu</string>
+    <string name="lang_arabic">Arabic</string>
+    <string name="lang_bengali">Bengali</string>
+    <string name="lang_chinese">Chinese</string>
+
+    <!-- Profile setup -->
+    <string name="cd_back">Back</string>
+    <string name="setup_step_label">Step %1$d of %2$d</string>
+    <string name="setup_continue">Continue</string>
+    <string name="setup_optional">(optional)</string>
+
+    <string name="setup_name_title">What should we\ncall you?</string>
+    <string name="setup_name_subtitle">Your AI tutor will use your name to make lessons feel personal.</string>
+    <string name="setup_name_label">Your first name</string>
+    <string name="setup_name_hint">Your name</string>
+    <string name="setup_name_helper">Only used inside the app. You can change it anytime.</string>
+    <string name="setup_name_preview">Preview</string>
+    <string name="setup_name_greeting">Good morning 👋</string>
+    <string name="setup_name_greeting_fallback">there</string>
+    <string name="setup_name_bubble">Hi %1$s! Ready to pick up where we left off?</string>
+
+    <string name="setup_level_title">Where are you studying?</string>
+    <string name="setup_level_subtitle">We’ll match explanations to your level.</string>
+    <string name="setup_level_school">School</string>
+    <string name="setup_level_school_detail">Grades 1–12</string>
+    <string name="setup_level_college">College</string>
+    <string name="setup_level_college_detail">Intermediate, A Levels or diploma</string>
+    <string name="setup_level_university">University</string>
+    <string name="setup_level_university_detail">Undergraduate or postgraduate</string>
+    <string name="setup_grade_label">Your grade</string>
+    <string name="setup_board_label">Curriculum or board</string>
+    <string name="setup_board_placeholder">Select your board</string>
+    <string name="grade_1_5">Grade 1–5</string>
+    <string name="grade_6">Grade 6</string>
+    <string name="grade_7">Grade 7</string>
+    <string name="grade_8">Grade 8</string>
+    <string name="grade_9">Grade 9</string>
+    <string name="grade_10">Grade 10</string>
+    <string name="grade_11">Grade 11</string>
+    <string name="grade_12">Grade 12</string>
+
+    <string name="setup_subjects_title">Which subjects do you need help with?</string>
+    <string name="setup_subjects_subtitle">Pick as many as you like. We’ll suggest tools and examples for them.</string>
+    <string name="setup_subjects_add_other">Add other</string>
+    <string name="setup_subjects_selected">%1$d selected</string>
+    <string name="setup_subjects_change_later">you can change these later</string>
+    <string name="subject_math">Math</string>
+    <string name="subject_physics">Physics</string>
+    <string name="subject_chemistry">Chemistry</string>
+    <string name="subject_biology">Biology</string>
+    <string name="subject_english">English</string>
+    <string name="subject_history">History</string>
+    <string name="subject_geography">Geography</string>
+    <string name="subject_computer_science">Computer Science</string>
+    <string name="subject_economics">Economics</string>
+    <string name="subject_languages">Languages</string>
+    <string name="subject_art">Art &amp; Design</string>
+
+    <string name="setup_goals_title">What’s your main goal?</string>
+    <string name="setup_goals_subtitle">Choose up to 2. We’ll shape your daily plan around them.</string>
+    <string name="goal_exams">Ace my exams</string>
+    <string name="goal_homework">Finish homework faster</string>
+    <string name="goal_understand">Understand tough topics</string>
+    <string name="goal_writing">Improve my writing</string>
+    <string name="setup_daily_time_label">Daily study time</string>
+    <string name="setup_reminder_label">Daily reminder</string>
+    <string name="study_time_15">15 min</string>
+    <string name="study_time_30">30 min</string>
+    <string name="study_time_60">1 hr</string>
+    <string name="study_time_120">2 hr+</string>
+
+    <string name="setup_done_title">You’re all set, %1$s!</string>
+    <string name="setup_done_subtitle">Your study space is ready.</string>
+    <string name="setup_done_cta">Start learning</string>
+    <string name="setup_done_edit_hint">You can edit this anytime in Profile</string>
+    <string name="setup_done_level">Level</string>
+    <string name="setup_done_subjects">Subjects</string>
+    <string name="setup_done_goals">Goals</string>
+    <string name="setup_done_plan">Daily plan</string>
+    <string name="setup_done_none">Not set</string>
+    <string name="setup_done_plan_value">%1$s a day · reminder at %2$s</string>
+
+    <!-- Bottom navigation -->
+    <string name="nav_home">Home</string>
+    <string name="nav_tools">AI Tools</string>
+    <string name="nav_history">History</string>
+    <string name="nav_profile">Profile</string>
+
+    <!-- Home -->
+    <string name="home_greeting_morning">Good morning 👋</string>
+    <string name="home_assistant_badge">AI Study Assistant</string>
+    <string name="home_prompt">What would you like\nto learn today?</string>
+    <string name="home_ask_hint">Ask a question…</string>
+    <string name="cd_profile">Your profile</string>
+    <string name="cd_notifications">Notifications</string>
+    <string name="cd_ask_voice">Ask by voice</string>
+    <string name="cd_send_question">Send question</string>
+    <string name="home_chip_scan">Scan homework</string>
+    <string name="home_chip_newton">Explain Newton’s laws</string>
+    <string name="home_chip_quiz">Quiz me</string>
+
+    <string name="home_continue_label">Continue learning</string>
+    <string name="cd_resume">Resume %1$s</string>
+
+    <string name="home_tools_title">AI Study Tools</string>
+    <string name="home_see_all">See all</string>
+    <string name="home_activity_title">Recent Activity</string>
+    <string name="home_view_all">View all</string>
+
+    <string name="home_challenge_label">Daily challenge</string>
+    <string name="home_challenge_title">5 quick questions on Cells</string>
+    <string name="home_challenge_detail">About 3 minutes</string>
+    <string name="home_challenge_start">Start</string>
+
+    <!-- Study tools -->
+    <string name="tool_chatbot">AI Chatbot</string>
+    <string name="tool_chatbot_grid">AI\nChatbot</string>
+    <string name="tool_chatbot_tagline">General study conversations and questions</string>
+    <string name="tool_homework">Homework Solver</string>
+    <string name="tool_homework_grid">Homework\nSolver</string>
+    <string name="tool_homework_tagline">Snap it, solve it, learn it</string>
+    <string name="tool_math">Math Solver</string>
+    <string name="tool_math_grid">Math\nSolver</string>
+    <string name="tool_math_tagline">Step-by-step solutions</string>
+    <string name="tool_notes">Notes Summarizer</string>
+    <string name="tool_notes_grid">Notes\nSummarizer</string>
+    <string name="tool_notes_tagline">Turn long notes into concise summaries</string>
+    <string name="tool_tutor">AI Tutor</string>
+    <string name="tool_tutor_grid">AI\nTutor</string>
+    <string name="tool_tutor_tagline">Lessons that adapt to your pace</string>
+    <string name="tool_grammar">Grammar Fixer</string>
+    <string name="tool_grammar_grid">Grammar\nFixer</string>
+    <string name="tool_grammar_tagline">Improve grammar and writing</string>
+    <string name="tool_essay">Essay Writer</string>
+    <string name="tool_essay_grid">Essay\nWriter</string>
+    <string name="tool_essay_tagline">Generate structured essays</string>
+    <string name="tool_paraphrase">Paraphrasing</string>
+    <string name="tool_paraphrase_grid">Para-\nphrasing</string>
+    <string name="tool_paraphrase_tagline">Rewrite text naturally</string>
+    <string name="tool_summary">Summary Generator</string>
+    <string name="tool_summary_grid">Summary\nGenerator</string>
+    <string name="tool_summary_tagline">Create quick summaries from text</string>
+    <string name="tool_concept">Concept Explainer</string>
+    <string name="tool_concept_grid">Concept\nExplainer</string>
+    <string name="tool_concept_tagline">Understand difficult concepts easily</string>
+
+    <!-- Sample activity (placeholder until real history exists) -->
+    <!-- Tools tab -->
+    <string name="tools_title">AI Tools</string>
+    <string name="tools_subtitle">%1$d tools to help you study smarter</string>
+    <string name="tools_search_hint">Search tools…</string>
+    <string name="tools_recommended">Recommended</string>
+    <string name="filter_all">All</string>
+    <string name="badge_new">NEW</string>
+    <string name="action_start">Start</string>
+    <string name="tools_group_popular">Most popular</string>
+    <string name="tools_group_understand">Understand &amp; chat</string>
+    <string name="tools_group_write">Write &amp; improve</string>
+    <string name="tools_group_summarize">Summarize</string>
+    <string name="tools_chip_solve">Solve</string>
+    <string name="tools_chip_understand">Understand</string>
+    <string name="tools_chip_write">Write</string>
+    <string name="tools_chip_summarize">Summarize</string>
+
+    <!-- History tab -->
+    <string name="history_title">History</string>
+    <string name="history_subtitle">Everything you’ve asked and created</string>
+    <string name="history_search_hint">Search your history…</string>
+    <string name="history_this_week">This week</string>
+    <string name="history_week_range">Sep 21 – 27</string>
+    <string name="history_empty_filter">Nothing here yet under this filter.</string>
+    <string name="history_empty_title">No history yet</string>
+    <string name="history_empty_body">Ask a question and it will show up here so you can pick it back up later.</string>
+    <string name="cd_filter_history">Filter history</string>
+    <string name="history_stat_questions_value">24</string>
+    <string name="history_stat_questions_label">Questions</string>
+    <string name="history_stat_solved_value">9</string>
+    <string name="history_stat_solved_label">Solved</string>
+    <string name="history_stat_time_value">3h 20m</string>
+    <string name="history_stat_time_label">Study time</string>
+    <string name="history_filter_all">All</string>
+    <string name="history_filter_chats">Chats</string>
+    <string name="history_filter_solved">Solved</string>
+    <string name="history_filter_summaries">Summaries</string>
+    <string name="history_filter_writing">Writing</string>
+    <string name="history_group_today">Today</string>
+    <string name="history_group_yesterday">Yesterday</string>
+    <string name="history_group_earlier">Earlier this week</string>
+    <string name="history_group_older">Older</string>
+
+    <!-- Placeholder history, replaced by the database in a later phase -->
+    <string name="history_1_title">Solved Algebra Homework</string>
+    <string name="history_1_detail">x² − 5x + 6 = 0 · 5 steps</string>
+    <string name="history_2_title">Summarized Biology Notes</string>
+    <string name="history_2_detail">Cell division, Ch. 4 · 6 key points</string>
+    <string name="history_3_title">Why does the Moon have phases?</string>
+    <string name="history_3_detail">8 messages · Astronomy</string>
+    <string name="history_4_title">Explained Photosynthesis</string>
+    <string name="history_4_detail">Light-dependent reactions, simplified</string>
+    <string name="history_5_title">Integration by parts</string>
+    <string name="history_5_detail">∫ x·eˣ dx · 4 steps</string>
+    <string name="history_6_title">Grammar correction</string>
+    <string name="history_6_detail">History essay draft · 14 fixes</string>
+    <string name="history_7_title">Causes of World War I</string>
+    <string name="history_7_detail">5 paragraphs · 820 words</string>
+
+    <!-- Profile tab -->
+    <string name="profile_default_name">Student</string>
+    <string name="profile_level_unset">Level not set</string>
+    <string name="profile_plan_free_badge">Free plan</string>
+    <string name="profile_plan_free">Free</string>
+    <string name="cd_settings">Settings</string>
+    <string name="cd_edit_profile">Edit profile</string>
+    <string name="profile_stat_questions_value">128</string>
+    <string name="profile_stat_questions_label">Questions asked</string>
+    <string name="profile_stat_notes_value">36</string>
+    <string name="profile_stat_notes_label">Notes summarized</string>
+    <string name="profile_stat_streak_value">12</string>
+    <string name="profile_stat_streak_label">Day streak</string>
+    <string name="profile_upgrade_title">Upgrade to Pro</string>
+    <string name="profile_upgrade_body">Unlimited questions, step-by-step math and PDF summaries</string>
+    <string name="profile_daily_questions">Daily questions</string>
+    <string name="profile_daily_questions_value">%1$d of %2$d used</string>
+    <string name="profile_see_plans">See Pro plans</string>
+    <string name="profile_group_learning">Learning</string>
+    <string name="profile_group_preferences">Preferences</string>
+    <string name="profile_group_account">Account &amp; support</string>
+    <string name="profile_subjects">Subjects &amp; grade level</string>
+    <string name="profile_subjects_value">%1$d subjects</string>
+    <string name="profile_daily_goal">Daily study goal</string>
+    <string name="profile_language">Language</string>
+    <string name="profile_reminders">Study reminders</string>
+    <string name="profile_dark_mode">Dark mode</string>
+    <string name="profile_voice_input">Voice input</string>
+    <string name="profile_subscription">Subscription</string>
+    <string name="profile_privacy">Privacy &amp; data</string>
+    <string name="profile_help">Help &amp; feedback</string>
+    <string name="profile_rate">Rate the app</string>
+    <string name="profile_log_out">Log out</string>
+    <string name="profile_version">Version %1$s</string>
+
+    <!-- Language, reached from Profile -->
+    <string name="language_settings_title">Language</string>
+    <string name="language_settings_subtitle">Choose the language for menus, buttons and AI answers.</string>
+    <string name="language_apply">Apply language</string>
+    <!-- Chat -->
+    <string name="chat_composer_hint">Ask anything…</string>
+    <string name="chat_subject_default">Biology</string>
+    <string name="cd_switch_mode">Switch AI mode</string>
+    <string name="cd_chat_options">Chat options</string>
+    <string name="cd_scan_text">Scan text from a photo or document</string>
+    <string name="cd_speak_question">Speak your question</string>
+    <string name="chat_attachment_title">Scanned text</string>
+    <string name="chat_attachment_detail">%1$s · %2$d words</string>
+    <string name="chat_answer_from">%1$s answer</string>
+    <string name="action_close">Close</string>
+
+    <!-- Answer actions -->
+    <string name="chat_action_copy">Copy</string>
+    <string name="chat_action_share">Share</string>
+    <string name="chat_action_read_aloud">Read aloud</string>
+    <string name="chat_action_helpful">Helpful</string>
+    <string name="chat_action_not_helpful">Not helpful</string>
+    <string name="chat_action_regenerate">Regenerate</string>
+    <string name="chat_action_more">More</string>
+    <string name="chat_make_shorter">Make shorter</string>
+    <string name="chat_make_longer">Make longer</string>
+    <string name="chat_select_text">Select text</string>
+    <string name="chat_reading_voice">Reading voice</string>
+    <string name="chat_reading_voice_value">Nova</string>
+    <string name="chat_report_answer">Report answer</string>
+    <string name="chat_was_helpful">Was this helpful?</string>
+
+    <!-- Chat menu -->
+    <string name="chat_menu_new">New chat</string>
+    <string name="chat_menu_rename">Rename chat</string>
+    <string name="chat_menu_share">Share chat</string>
+    <string name="chat_menu_text_size">Text size</string>
+    <string name="chat_text_smaller">A−</string>
+    <string name="chat_text_larger">A+</string>
+    <string name="chat_menu_clear">Clear messages</string>
+    <string name="chat_menu_delete">Delete chat</string>
+
+    <!-- Scan sheet -->
+    <string name="scan_title">Scan text</string>
+    <string name="scan_subtitle">Pull text from a photo or document and use it as your question.</string>
+    <string name="scan_camera">Camera</string>
+    <string name="scan_camera_detail">Snap your notebook</string>
+    <string name="scan_gallery">Gallery</string>
+    <string name="scan_gallery_detail">Choose a photo</string>
+    <string name="scan_pdf">PDF</string>
+    <string name="scan_pdf_detail">Import a PDF file</string>
+    <string name="scan_word">Word</string>
+    <string name="scan_word_detail">Import a .docx file</string>
+    <string name="scan_privacy_note">Works offline · text stays on your device</string>
+
+    <!-- Voice input -->
+    <string name="voice_listening">Listening…</string>
+    <string name="voice_transcript_final">Explain how photosynthesis makes glucose</string>
+    <string name="voice_transcript_partial">in simple</string>
+    <string name="cd_cancel_voice">Cancel voice input</string>
+    <string name="cd_accept_voice">Add text to message</string>
+    <string name="cd_pause_listening">Pause listening</string>
+
+    <!-- Select text -->
+    <string name="select_all">Select all</string>
+    <string name="select_hint">Drag the handles to choose the text you need</string>
+    <string name="select_answer_meta">%1$s · %2$s</string>
+    <string name="select_explain">Explain</string>
+    <string name="select_ask_ai">Ask AI</string>
+    <string name="select_words_selected">%1$d words selected</string>
+    <string name="select_ask_about_this">Ask about this</string>
+
+    <!-- Placeholder conversation, replaced by the API and database in a later phase -->
+    <string name="chat_sample_q1">What’s the difference between mitosis and meiosis?</string>
+    <string name="chat_sample_a1_intro">Both are cell divisions, but they do different jobs:</string>
+    <string name="chat_sample_a1_term1">Mitosis</string>
+    <string name="chat_sample_a1_text1">makes 2 identical cells for growth and repair.</string>
+    <string name="chat_sample_a1_term2">Meiosis</string>
+    <string name="chat_sample_a1_text2">makes 4 unique cells used for reproduction.</string>
+    <string name="chat_sample_a1_outro">Want me to quiz you on this?</string>
+    <string name="chat_sample_q2">Summarize my notes on the cell cycle</string>
+    <string name="chat_sample_timestamp">10:22 AM</string>
+    <!-- Home, before the first conversation exists -->
+    <string name="home_start_label">Start learning</string>
+    <string name="home_start_title">Ask your first question</string>
+    <string name="home_start_detail">Anything from your homework to a topic you\'re stuck on</string>
+
+    <!-- Chat, before the first message and when a request fails -->
+    <string name="chat_empty_hint">Type a question below to get started.</string>
+    <string name="chat_error_no_api">No AI service is connected yet, so answers can\'t be generated. Your question has been saved.</string>
+    <string name="chat_error_generic">That didn\'t go through. Your question has been saved — try sending again.</string>
+    <!-- Pro plans -->
+    <string name="pro_title">Study without limits</string>
+    <string name="pro_subtitle">Unlock every AI tool for every subject.</string>
+    <string name="pro_restore">Restore</string>
+    <string name="pro_choose_plan">Choose your plan</string>
+    <string name="pro_best_value">BEST VALUE</string>
+    <string name="pro_plan_yearly">Yearly</string>
+    <string name="pro_plan_monthly">Monthly</string>
+    <string name="pro_plan_per_year">/ year</string>
+    <string name="pro_plan_per_month">/ month</string>
+    <string name="pro_plan_per_month_equivalent">Just %1$s / month</string>
+    <string name="pro_plan_billed_yearly">Billed once a year</string>
+    <string name="pro_plan_billed_monthly">Billed every month</string>
+    <!-- Stands in until Google Play reports the buyer\'s local price -->
+    <string name="pro_price_unknown">—</string>
+    <string name="pro_continue_with">Continue with %1$s</string>
+    <string name="pro_renews_yearly">Renews yearly until cancelled. Cancel anytime in Google Play.</string>
+    <string name="pro_renews_monthly">Renews monthly until cancelled. Cancel anytime in Google Play.</string>
+    <string name="pro_terms">Terms</string>
+    <string name="pro_privacy">Privacy</string>
+    <string name="pro_restore_purchase">Restore purchase</string>
+    <string name="pro_benefit_unlimited">Unlimited questions</string>
+    <string name="pro_benefit_unlimited_detail">No daily limit on AI chats</string>
+    <string name="pro_benefit_steps">Step-by-step solutions</string>
+    <string name="pro_benefit_steps_detail">Math and homework, fully explained</string>
+    <string name="pro_benefit_documents">PDF &amp; Word summaries</string>
+    <string name="pro_benefit_documents_detail">Scan and summarize long documents</string>
+    <string name="pro_benefit_voices">Every reading voice</string>
+    <string name="pro_benefit_voices_detail">Listen to answers in any voice</string>
 </resources>

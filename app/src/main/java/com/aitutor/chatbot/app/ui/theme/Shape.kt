@@ -1,29 +1,31 @@
 package com.aitutor.chatbot.app.ui.theme
 
-import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material3.Shapes
 import androidx.compose.ui.unit.dp
 
-/**
- * Three radii only. [Row] is anything list-like (settings/history/tools
- * rows). [Card] is the one bordered card treatment (suggestion chips, the
- * featured tools row). [Pill] is fully rounded — the chat input bar and its
- * send button, matching the one unmistakably "chat app" shape in the UI.
- */
+/** The design's corner radii, named by what they belong to rather than by size. */
 object AppShapes {
-    val Row = RoundedCornerShape(10.dp)
-    val Card = RoundedCornerShape(16.dp)
-    /** The dashboard's feature surfaces — hero, upgrade card, stat tiles. */
-    val CardLarge = RoundedCornerShape(24.dp)
-    val Pill = CircleShape
-    val PillLarge = RoundedCornerShape(28.dp)
+    /** The accent panel at the top of onboarding — square top, generous bottom. */
+    val HeroPanel = RoundedCornerShape(bottomStart = 40.dp, bottomEnd = 40.dp)
+    val LogoLarge = RoundedCornerShape(34.dp)
+    val LogoSmall = RoundedCornerShape(11.dp)
+    val CardLarge = RoundedCornerShape(22.dp)
+    val Card = RoundedCornerShape(20.dp)
+    val CardSmall = RoundedCornerShape(16.dp)
+    val Tool = RoundedCornerShape(26.dp)
+    val Button = RoundedCornerShape(28.dp)
+    val Pill = RoundedCornerShape(percent = 50)
+
+    /** Chat bubbles: the flattened corner points back at whoever is speaking. */
+    val BubbleUser = RoundedCornerShape(topStart = 20.dp, topEnd = 20.dp, bottomEnd = 6.dp, bottomStart = 20.dp)
+    val BubbleAi = RoundedCornerShape(topStart = 6.dp, topEnd = 22.dp, bottomEnd = 22.dp, bottomStart = 22.dp)
 }
 
-val Shapes = Shapes(
-    extraSmall = AppShapes.Row,
-    small = AppShapes.Row,
+val MaterialShapes = Shapes(
+    extraSmall = AppShapes.CardSmall,
+    small = AppShapes.CardSmall,
     medium = AppShapes.Card,
-    large = AppShapes.Card,
-    extraLarge = AppShapes.PillLarge,
+    large = AppShapes.CardLarge,
+    extraLarge = AppShapes.Button,
 )

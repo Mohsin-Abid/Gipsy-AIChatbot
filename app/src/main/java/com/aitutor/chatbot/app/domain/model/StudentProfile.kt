@@ -1,84 +1,75 @@
 package com.aitutor.chatbot.app.domain.model
 
-import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.automirrored.outlined.MenuBook
-import androidx.compose.material.icons.outlined.Biotech
-import androidx.compose.material.icons.outlined.Bolt
-import androidx.compose.material.icons.outlined.Calculate
-import androidx.compose.material.icons.outlined.Computer
-import androidx.compose.material.icons.outlined.HistoryEdu
-import androidx.compose.material.icons.outlined.Public
-import androidx.compose.material.icons.outlined.Science
-import androidx.compose.material.icons.outlined.Translate
+import androidx.annotation.StringRes
 import androidx.compose.ui.graphics.vector.ImageVector
+import com.aitutor.chatbot.app.R
+import com.aitutor.chatbot.app.ui.icons.AppIcons
 
-/** [promptLabel] is what actually reaches the model — the UI label is written for students, not models. */
-enum class GradeLevel(val label: String, val caption: String, val promptLabel: String) {
-    Elementary("Grades 1–5", "Primary school", "elementary school (grades 1-5)"),
-    MiddleSchool("Grades 6–8", "Middle school", "middle school (grades 6-8)"),
-    HighSchool("Grades 9–12", "High school", "high school (grades 9-12)"),
-    College("College", "University level", "college / university level"),
-    Other("Something else", "Self-study or other", "a general learner");
-
-    companion object {
-        fun fromName(name: String?): GradeLevel? = entries.firstOrNull { it.name == name }
-    }
+/** Where the student is studying — drives how explanations are pitched. */
+enum class StudyLevel(
+    @param:StringRes val labelRes: Int,
+    @param:StringRes val detailRes: Int,
+    val icon: ImageVector,
+) {
+    School(R.string.setup_level_school, R.string.setup_level_school_detail, AppIcons.School),
+    College(R.string.setup_level_college, R.string.setup_level_college_detail, AppIcons.College),
+    University(R.string.setup_level_university, R.string.setup_level_university_detail, AppIcons.Study),
 }
 
-enum class Subject(val label: String, val icon: ImageVector) {
-    Math("Math", Icons.Outlined.Calculate),
-    Physics("Physics", Icons.Outlined.Bolt),
-    Chemistry("Chemistry", Icons.Outlined.Science),
-    Biology("Biology", Icons.Outlined.Biotech),
-    English("English", Icons.AutoMirrored.Outlined.MenuBook),
-    History("History", Icons.Outlined.HistoryEdu),
-    Geography("Geography", Icons.Outlined.Public),
-    ComputerScience("Computer Science", Icons.Outlined.Computer),
-    Languages("Languages", Icons.Outlined.Translate);
-
-    companion object {
-        fun fromNames(names: Set<String>): Set<Subject> =
-            names.mapNotNull { name -> entries.firstOrNull { it.name == name } }.toSet()
-    }
+enum class Grade(@param:StringRes val labelRes: Int) {
+    Grades1To5(R.string.grade_1_5),
+    Grade6(R.string.grade_6),
+    Grade7(R.string.grade_7),
+    Grade8(R.string.grade_8),
+    Grade9(R.string.grade_9),
+    Grade10(R.string.grade_10),
+    Grade11(R.string.grade_11),
+    Grade12(R.string.grade_12),
 }
 
-enum class StudyGoal(val label: String, val detail: String, val promptLabel: String) {
-    KeepUp("Keep up with homework", "Daily help getting assignments done", "keeping up with day-to-day homework"),
-    ExamPrep("Prepare for exams", "Revision, practice and past questions", "preparing for upcoming exams"),
-    Grades("Improve my grades", "Targeted help on weaker topics", "raising their grades in weaker topics"),
-    Understand("Understand topics deeply", "Concepts explained until they click", "building deep conceptual understanding");
+enum class Subject(@param:StringRes val labelRes: Int, val icon: ImageVector) {
+    Math(R.string.subject_math, AppIcons.Math),
+    Physics(R.string.subject_physics, AppIcons.Physics),
+    Chemistry(R.string.subject_chemistry, AppIcons.Chemistry),
+    Biology(R.string.subject_biology, AppIcons.Biology),
+    English(R.string.subject_english, AppIcons.EnglishSubject),
+    History(R.string.subject_history, AppIcons.History),
+    Geography(R.string.subject_geography, AppIcons.Globe),
+    ComputerScience(R.string.subject_computer_science, AppIcons.Code),
+    Economics(R.string.subject_economics, AppIcons.Economics),
+    Languages(R.string.subject_languages, AppIcons.Languages),
+    Art(R.string.subject_art, AppIcons.Art),
+}
 
-    companion object {
-        fun fromName(name: String?): StudyGoal? = entries.firstOrNull { it.name == name }
-    }
+enum class StudyGoal(@param:StringRes val labelRes: Int, val icon: ImageVector) {
+    AceExams(R.string.goal_exams, AppIcons.Target),
+    FinishHomework(R.string.goal_homework, AppIcons.Quiz),
+    UnderstandTopics(R.string.goal_understand, AppIcons.Idea),
+    ImproveWriting(R.string.goal_writing, AppIcons.Write),
+}
+
+enum class StudyTime(@param:StringRes val labelRes: Int) {
+    Minutes15(R.string.study_time_15),
+    Minutes30(R.string.study_time_30),
+    Hour1(R.string.study_time_60),
+    Hours2Plus(R.string.study_time_120),
 }
 
 /**
- * Collected during onboarding, injected into every chat's system instruction so answers land at the
- * student's level. Every field is optional — onboarding is skippable and the tutor still works.
+ * What the setup flow collects. It is one immutable value passed between steps, so a step can be
+ * skipped without leaving the rest half-written.
  */
 data class StudentProfile(
-    val grade: GradeLevel? = null,
+    val name: String = "",
+    val level: StudyLevel? = StudyLevel.School,
+    val grade: Grade? = Grade.Grade10,
     val subjects: Set<Subject> = emptySet(),
-    val goal: StudyGoal? = null,
+    val goals: Set<StudyGoal> = emptySet(),
+    val dailyTime: StudyTime = StudyTime.Hour1,
+    val reminderEnabled: Boolean = true,
 ) {
-    val isSet: Boolean get() = grade != null || subjects.isNotEmpty() || goal != null
-
-    /** "Grades 9–12 · Math, Physics" — the dashboard chip. */
-    val summary: String
-        get() = listOfNotNull(
-            grade?.label,
-            subjects.takeIf { it.isNotEmpty() }?.joinToString(", ") { it.label },
-        ).joinToString(" · ").ifBlank { "Set up your learning profile" }
-
-    /** The block handed to the model. Empty when nothing was collected, so no fake context is invented. */
-    fun toPromptBlock(): String {
-        if (!isSet) return ""
-        val parts = buildList {
-            grade?.let { add("studies at ${it.promptLabel}") }
-            subjects.takeIf { it.isNotEmpty() }?.let { add("focuses on ${it.joinToString(", ") { s -> s.label }}") }
-            goal?.let { add("is focused on ${it.promptLabel}") }
-        }
-        return "The student " + parts.joinToString("; ") + "."
+    companion object {
+        /** The design shows two goals chosen; more than that stops being a priority. */
+        const val MAX_GOALS = 2
     }
 }
