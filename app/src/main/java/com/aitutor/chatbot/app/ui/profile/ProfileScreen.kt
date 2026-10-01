@@ -3,6 +3,7 @@ package com.aitutor.chatbot.app.ui.profile
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
+import androidx.compose.foundation.selection.selectable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
@@ -25,6 +26,7 @@ import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.getValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
@@ -33,6 +35,7 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.semantics.Role
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
@@ -40,8 +43,8 @@ import androidx.compose.ui.unit.sp
 import com.aitutor.chatbot.app.R
 import com.aitutor.chatbot.app.domain.model.AppLanguage
 import com.aitutor.chatbot.app.domain.model.StudentProfile
+import com.aitutor.chatbot.app.domain.model.ThemeMode
 import com.aitutor.chatbot.app.ui.components.AppSwitch
-import com.aitutor.chatbot.app.ui.components.Reveal
 import com.aitutor.chatbot.app.ui.icons.AppIcons
 import com.aitutor.chatbot.app.ui.main.GlyphTile
 import com.aitutor.chatbot.app.ui.main.HeroIconButton
@@ -55,7 +58,6 @@ import com.aitutor.chatbot.app.ui.main.PanelDivider
 import com.aitutor.chatbot.app.ui.theme.AITutorTheme
 import com.aitutor.chatbot.app.ui.theme.AppShapes
 import com.aitutor.chatbot.app.ui.theme.Dimens
-import com.aitutor.chatbot.app.ui.theme.Motion
 import com.aitutor.chatbot.app.ui.theme.OnHero
 import com.aitutor.chatbot.app.ui.theme.TallScreenPreviews
 import com.aitutor.chatbot.app.ui.theme.SystemBarIcons
@@ -65,6 +67,8 @@ private val CardShape = RoundedCornerShape(24.dp)
 private val RowShape = RoundedCornerShape(20.dp)
 private val ShadowTint = Color(0xFF080C28)
 private val RowIconInset = 70.dp
+private val SegmentTrackShape = RoundedCornerShape(15.dp)
+private val SegmentShape = RoundedCornerShape(12.dp)
 
 /** Placeholder usage until billing and the data layer exist. */
 private const val DAILY_QUESTIONS_USED = 7
@@ -79,10 +83,10 @@ fun ProfileScreen(
     profile: StudentProfile,
     language: AppLanguage,
     remindersEnabled: Boolean,
-    darkModeEnabled: Boolean,
+    themeMode: ThemeMode,
     voiceInputEnabled: Boolean,
     onRemindersChange: (Boolean) -> Unit,
-    onDarkModeChange: (Boolean) -> Unit,
+    onThemeModeChange: (ThemeMode) -> Unit,
     onVoiceInputChange: (Boolean) -> Unit,
     onEditProfile: () -> Unit,
     onOpenLanguage: () -> Unit,
@@ -104,8 +108,7 @@ fun ProfileScreen(
 
         ProfileHero(profile = profile, onEditProfile = onEditProfile)
 
-        Reveal(
-            delayMillis = Motion.Stagger,
+        Box(
             modifier = Modifier
                 .offset(y = (-48).dp)
                 .padding(horizontal = TabSidePadding),
@@ -155,12 +158,7 @@ fun ProfileScreen(
                     onCheckedChange = onRemindersChange,
                 )
                 PanelDivider(inset = RowIconInset)
-                ToggleRow(
-                    icon = AppIcons.Moon,
-                    label = stringResource(R.string.profile_dark_mode),
-                    checked = darkModeEnabled,
-                    onCheckedChange = onDarkModeChange,
-                )
+                ThemeRow(selected = themeMode, onSelect = onThemeModeChange)
                 PanelDivider(inset = RowIconInset)
                 ToggleRow(
                     icon = AppIcons.Mic,
@@ -243,7 +241,7 @@ private fun ProfileHero(
             )
         }
 
-        Reveal(delayMillis = Motion.Stagger, lift = 14.dp) {
+        Box {
             Column(
                 modifier = Modifier
                     .fillMaxWidth()
@@ -570,6 +568,95 @@ private fun ToggleRow(
     }
 }
 
+/**
+ * Theme, as three choices rather than a switch.
+ *
+ * The control sits under its own label instead of beside it: three legible options do not fit in
+ * what is left of a 62dp row, and shrinking them to icons alone would make "System" a guess.
+ */
+@Composable
+private fun ThemeRow(selected: ThemeMode, onSelect: (ThemeMode) -> Unit) {
+    val colors = MaterialTheme.appColors
+    Column(
+        modifier = Modifier
+            .fillMaxWidth()
+            .padding(start = Dimens.spaceLg + 2.dp, end = Dimens.spaceLg + 2.dp, top = Dimens.spaceMd, bottom = Dimens.spaceLg),
+        verticalArrangement = Arrangement.spacedBy(Dimens.spaceMd),
+    ) {
+        Row(
+            verticalAlignment = Alignment.CenterVertically,
+            horizontalArrangement = Arrangement.spacedBy(Dimens.spaceLg),
+        ) {
+            GlyphTile(icon = AppIcons.Contrast, size = 40.dp, cornerRadius = 13.dp)
+            Text(
+                text = stringResource(R.string.profile_theme),
+                style = MaterialTheme.typography.bodyLarge.copy(fontWeight = FontWeight.Medium),
+                color = colors.textPrimary,
+                modifier = Modifier.weight(1f),
+            )
+        }
+        ThemeSegmentedControl(selected = selected, onSelect = onSelect)
+    }
+}
+
+@Composable
+private fun ThemeSegmentedControl(selected: ThemeMode, onSelect: (ThemeMode) -> Unit) {
+    val colors = MaterialTheme.appColors
+    Row(
+        modifier = Modifier
+            .fillMaxWidth()
+            .clip(SegmentTrackShape)
+            .background(colors.accentTint)
+            .padding(3.dp),
+        horizontalArrangement = Arrangement.spacedBy(3.dp),
+    ) {
+        ThemeMode.entries.forEach { mode ->
+            ThemeSegment(
+                mode = mode,
+                selected = mode == selected,
+                onClick = { onSelect(mode) },
+                modifier = Modifier.weight(1f),
+            )
+        }
+    }
+}
+
+@Composable
+private fun ThemeSegment(
+    mode: ThemeMode,
+    selected: Boolean,
+    onClick: () -> Unit,
+    modifier: Modifier = Modifier,
+) {
+    val colors = MaterialTheme.appColors
+    val background = if (selected) colors.surfaceRaised else Color.Transparent
+    val foreground = if (selected) colors.accentText else colors.textSecondary
+    Row(
+        modifier = modifier
+            .height(40.dp)
+            .clip(SegmentShape)
+            .background(background)
+            .selectable(selected = selected, role = Role.RadioButton, onClick = onClick),
+        verticalAlignment = Alignment.CenterVertically,
+        horizontalArrangement = Arrangement.spacedBy(Dimens.spaceXs, Alignment.CenterHorizontally),
+    ) {
+        Icon(
+            imageVector = mode.icon,
+            contentDescription = null,
+            tint = foreground,
+            modifier = Modifier.size(16.dp),
+        )
+        Text(
+            text = stringResource(mode.labelRes),
+            style = MaterialTheme.typography.labelLarge.copy(
+                fontWeight = if (selected) FontWeight.Bold else FontWeight.Medium,
+            ),
+            color = foreground,
+            maxLines = 1,
+        )
+    }
+}
+
 @Composable
 private fun LogOutButton(onClick: () -> Unit) {
     val colors = MaterialTheme.appColors
@@ -622,10 +709,10 @@ private fun ProfileScreenPreview() {
             profile = StudentProfile(name = "Alex Morgan"),
             language = AppLanguage.English,
             remindersEnabled = true,
-            darkModeEnabled = false,
+            themeMode = ThemeMode.System,
             voiceInputEnabled = true,
             onRemindersChange = {},
-            onDarkModeChange = {},
+            onThemeModeChange = {},
             onVoiceInputChange = {},
             onEditProfile = {},
             onOpenLanguage = {},

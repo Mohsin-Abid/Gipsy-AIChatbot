@@ -1,6 +1,5 @@
 package com.aitutor.chatbot.app.ui.setup
 
-import androidx.compose.animation.animateColorAsState
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
 import androidx.compose.foundation.layout.Arrangement
@@ -32,12 +31,10 @@ import androidx.compose.ui.text.input.KeyboardCapitalization
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.aitutor.chatbot.app.R
-import com.aitutor.chatbot.app.ui.components.Reveal
 import com.aitutor.chatbot.app.ui.icons.AppIcons
 import com.aitutor.chatbot.app.ui.theme.AITutorTheme
 import com.aitutor.chatbot.app.ui.theme.AppShapes
 import com.aitutor.chatbot.app.ui.theme.Dimens
-import com.aitutor.chatbot.app.ui.theme.Motion
 import com.aitutor.chatbot.app.ui.theme.OverlineStyle
 import com.aitutor.chatbot.app.ui.theme.ScreenPreviews
 import com.aitutor.chatbot.app.ui.theme.appColors
@@ -81,9 +78,7 @@ fun SetupNameScreen(
             )
         }
 
-        Reveal(delayMillis = Motion.Stagger * 2, modifier = Modifier.padding(top = 28.dp)) {
-            GreetingPreview(name = name)
-        }
+        GreetingPreview(name = name, modifier = Modifier.padding(top = 28.dp))
     }
 }
 
@@ -91,16 +86,8 @@ fun SetupNameScreen(
 private fun NameField(name: String, onNameChange: (String) -> Unit) {
     val colors = MaterialTheme.appColors
     val focused = name.isNotBlank()
-    val border by animateColorAsState(
-        targetValue = if (focused) colors.accent else colors.fieldBorder,
-        animationSpec = Motion.medium(),
-        label = "fieldBorder",
-    )
-    val glow by animateColorAsState(
-        targetValue = if (focused) colors.accentTint else Color.Transparent,
-        animationSpec = Motion.medium(),
-        label = "fieldGlow",
-    )
+    val border = if (focused) colors.accent else colors.fieldBorder
+    val glow = if (focused) colors.accentTint else Color.Transparent
 
     Row(
         modifier = Modifier

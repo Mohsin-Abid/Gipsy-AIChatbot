@@ -9,7 +9,6 @@ import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
-import androidx.compose.foundation.layout.navigationBarsPadding
 import androidx.compose.foundation.layout.statusBarsPadding
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
@@ -38,15 +37,14 @@ import androidx.compose.ui.unit.sp
 import com.aitutor.chatbot.app.R
 import com.aitutor.chatbot.app.domain.model.StudentProfile
 import com.aitutor.chatbot.app.ui.components.PrimaryCta
-import com.aitutor.chatbot.app.ui.components.Reveal
 import com.aitutor.chatbot.app.ui.icons.AppIcons
 import com.aitutor.chatbot.app.ui.theme.AITutorTheme
 import com.aitutor.chatbot.app.ui.theme.AppInsets
 import com.aitutor.chatbot.app.ui.theme.AppShapes
 import com.aitutor.chatbot.app.ui.theme.Dimens
-import com.aitutor.chatbot.app.ui.theme.Motion
 import com.aitutor.chatbot.app.ui.theme.ScreenPreviews
 import com.aitutor.chatbot.app.ui.theme.SystemBarIcons
+import com.aitutor.chatbot.app.ui.theme.bottomSafePadding
 import com.aitutor.chatbot.app.ui.theme.appColors
 import com.aitutor.chatbot.app.domain.model.Grade
 import com.aitutor.chatbot.app.domain.model.StudyGoal
@@ -78,8 +76,7 @@ fun SetupDoneScreen(
 
         DoneHero(name = profile.name)
 
-        Reveal(
-            delayMillis = Motion.Stagger * 2,
+        Box(
             modifier = Modifier
                 .offset(y = (-36).dp)
                 .padding(horizontal = SetupSidePadding),
@@ -91,7 +88,7 @@ fun SetupDoneScreen(
 
         Column(
             modifier = Modifier
-                .navigationBarsPadding()
+                .bottomSafePadding()
                 .padding(start = SetupSidePadding, end = SetupSidePadding, bottom = 28.dp),
             verticalArrangement = Arrangement.spacedBy(Dimens.spaceMd),
         ) {
@@ -148,7 +145,7 @@ private fun DoneHero(name: String, modifier: Modifier = Modifier) {
                 .padding(top = 118.dp, start = Dimens.spaceXxl, end = Dimens.spaceXxl),
             horizontalAlignment = Alignment.CenterHorizontally,
         ) {
-            Reveal(lift = 12.dp) {
+            Box {
                 Box(
                     modifier = Modifier
                         .size(104.dp)
@@ -164,7 +161,7 @@ private fun DoneHero(name: String, modifier: Modifier = Modifier) {
                     )
                 }
             }
-            Reveal(delayMillis = Motion.Stagger, lift = 16.dp) {
+            Box {
                 Column(horizontalAlignment = Alignment.CenterHorizontally) {
                     Text(
                         text = stringResource(

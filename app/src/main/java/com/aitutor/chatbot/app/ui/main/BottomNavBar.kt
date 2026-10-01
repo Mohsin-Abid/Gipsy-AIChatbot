@@ -1,11 +1,5 @@
 package com.aitutor.chatbot.app.ui.main
 
-import androidx.compose.animation.AnimatedVisibility
-import androidx.compose.animation.animateColorAsState
-import androidx.compose.animation.expandHorizontally
-import androidx.compose.animation.fadeIn
-import androidx.compose.animation.fadeOut
-import androidx.compose.animation.shrinkHorizontally
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
@@ -34,7 +28,6 @@ import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import com.aitutor.chatbot.app.ui.theme.Dimens
-import com.aitutor.chatbot.app.ui.theme.Motion
 import com.aitutor.chatbot.app.ui.theme.appColors
 
 private val BarShape = RoundedCornerShape(34.dp)
@@ -88,16 +81,8 @@ private fun NavTab(
     onClick: () -> Unit,
 ) {
     val colors = MaterialTheme.appColors
-    val content by animateColorAsState(
-        targetValue = if (selected) colors.accent else Color.White.copy(alpha = 0.66f),
-        animationSpec = Motion.medium(),
-        label = "navContent",
-    )
-    val background by animateColorAsState(
-        targetValue = if (selected) Color.White else Color.Transparent,
-        animationSpec = Motion.medium(),
-        label = "navBackground",
-    )
+    val content = if (selected) colors.accent else Color.White.copy(alpha = 0.66f)
+    val background = if (selected) Color.White else Color.Transparent
     val label = stringResource(tab.labelRes)
     val interaction = remember { MutableInteractionSource() }
 
@@ -123,18 +108,12 @@ private fun NavTab(
                 tint = content,
                 modifier = Modifier.size(22.dp),
             )
-            AnimatedVisibility(
-                visible = true,
-                enter = fadeIn(Motion.medium()) + expandHorizontally(Motion.medium()),
-                exit = fadeOut(Motion.fast()) + shrinkHorizontally(Motion.fast()),
-            ) {
-                Text(
-                    text = label,
-                    style = MaterialTheme.typography.bodyMedium.copy(fontWeight = FontWeight.Bold),
-                    color = content,
-                    modifier = Modifier.padding(start = Dimens.spaceSm, end = Dimens.spaceXxs),
-                )
-            }
+            Text(
+                text = label,
+                style = MaterialTheme.typography.bodyMedium.copy(fontWeight = FontWeight.Bold),
+                color = content,
+                modifier = Modifier.padding(start = Dimens.spaceSm, end = Dimens.spaceXxs),
+            )
         } else {
             Column(
                 horizontalAlignment = Alignment.CenterHorizontally,

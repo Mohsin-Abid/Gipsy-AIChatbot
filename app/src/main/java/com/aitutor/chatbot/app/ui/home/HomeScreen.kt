@@ -48,14 +48,12 @@ import androidx.compose.ui.unit.sp
 import com.aitutor.chatbot.app.R
 import com.aitutor.chatbot.app.domain.model.HistoryEntry
 import com.aitutor.chatbot.app.domain.model.StudyTool
-import com.aitutor.chatbot.app.ui.components.Reveal
 import com.aitutor.chatbot.app.ui.icons.AppIcons
 import com.aitutor.chatbot.app.ui.main.TabBottomInset
 import com.aitutor.chatbot.app.ui.theme.AITutorTheme
 import com.aitutor.chatbot.app.ui.theme.AppShapes
 import com.aitutor.chatbot.app.ui.theme.Coral
 import com.aitutor.chatbot.app.ui.theme.Dimens
-import com.aitutor.chatbot.app.ui.theme.Motion
 import com.aitutor.chatbot.app.ui.theme.OnHero
 import com.aitutor.chatbot.app.ui.theme.OverlineStyle
 import com.aitutor.chatbot.app.ui.theme.SampleContent
@@ -106,8 +104,7 @@ fun HomeScreen(
 
         HomeHero(userName = userName, onOpenProfile = onOpenProfile)
 
-        Reveal(
-            delayMillis = Motion.Stagger,
+        Box(
             modifier = Modifier
                 .offset(y = (-48).dp)
                 .padding(horizontal = SidePadding),
@@ -180,7 +177,7 @@ private fun HomeHero(userName: String, onOpenProfile: () -> Unit, modifier: Modi
         ) {
             HeroHeader(userName = userName, onOpenProfile = onOpenProfile)
 
-            Reveal(delayMillis = Motion.Stagger, lift = 16.dp, modifier = Modifier.padding(top = 28.dp)) {
+            Box(modifier = Modifier.padding(top = 28.dp)) {
                 Column {
                     AssistantBadge()
                     Text(

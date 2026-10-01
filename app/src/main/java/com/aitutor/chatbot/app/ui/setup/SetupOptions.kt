@@ -1,12 +1,5 @@
 package com.aitutor.chatbot.app.ui.setup
 
-import androidx.compose.animation.AnimatedVisibility
-import androidx.compose.animation.animateColorAsState
-import androidx.compose.animation.core.animateFloatAsState
-import androidx.compose.animation.fadeIn
-import androidx.compose.animation.fadeOut
-import androidx.compose.animation.scaleIn
-import androidx.compose.animation.scaleOut
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
@@ -39,7 +32,6 @@ import androidx.compose.ui.unit.sp
 import com.aitutor.chatbot.app.ui.icons.AppIcons
 import com.aitutor.chatbot.app.ui.theme.AppShapes
 import com.aitutor.chatbot.app.ui.theme.Dimens
-import com.aitutor.chatbot.app.ui.theme.Motion
 import com.aitutor.chatbot.app.ui.theme.appColors
 
 /**
@@ -57,31 +49,11 @@ fun OptionCard(
     enabled: Boolean = true,
 ) {
     val colors = MaterialTheme.appColors
-    val background by animateColorAsState(
-        targetValue = if (selected) colors.accentTint else colors.surface,
-        animationSpec = Motion.medium(),
-        label = "optionBackground",
-    )
-    val border by animateColorAsState(
-        targetValue = if (selected) colors.accent else colors.fieldBorder,
-        animationSpec = Motion.medium(),
-        label = "optionBorder",
-    )
-    val tileFill by animateColorAsState(
-        targetValue = if (selected) colors.accent else colors.accentTint,
-        animationSpec = Motion.medium(),
-        label = "optionTile",
-    )
-    val tileIcon by animateColorAsState(
-        targetValue = if (selected) colors.onAccent else colors.accentText,
-        animationSpec = Motion.medium(),
-        label = "optionTileIcon",
-    )
-    val alpha by animateFloatAsState(
-        targetValue = if (enabled || selected) 1f else 0.45f,
-        animationSpec = Motion.medium(),
-        label = "optionAlpha",
-    )
+    val background = if (selected) colors.accentTint else colors.surface
+    val border = if (selected) colors.accent else colors.fieldBorder
+    val tileFill = if (selected) colors.accent else colors.accentTint
+    val tileIcon = if (selected) colors.onAccent else colors.accentText
+    val alpha = if (enabled || selected) 1f else 0.45f
 
     Row(
         modifier = modifier
@@ -132,23 +104,14 @@ fun OptionCard(
 internal fun CheckIndicator(selected: Boolean) {
     val colors = MaterialTheme.appColors
     Box(modifier = Modifier.size(24.dp), contentAlignment = Alignment.Center) {
-        AnimatedVisibility(
-            visible = !selected,
-            enter = fadeIn(Motion.fast()),
-            exit = fadeOut(Motion.fast()),
-        ) {
+        if (!selected) {
             Box(
                 modifier = Modifier
                     .size(24.dp)
                     .clip(AppShapes.Pill)
                     .border(2.dp, colors.radioOff, AppShapes.Pill)
             )
-        }
-        AnimatedVisibility(
-            visible = selected,
-            enter = scaleIn(Motion.medium()) + fadeIn(Motion.fast()),
-            exit = scaleOut(Motion.fast()) + fadeOut(Motion.fast()),
-        ) {
+        } else {
             Box(
                 modifier = Modifier
                     .size(24.dp)
@@ -177,36 +140,14 @@ fun OptionChip(
     icon: ImageVector? = null,
 ) {
     val colors = MaterialTheme.appColors
-    val background by animateColorAsState(
-        targetValue = if (selected) colors.accent else colors.surface,
-        animationSpec = Motion.medium(),
-        label = "chipBackground",
-    )
-    val border by animateColorAsState(
-        targetValue = if (selected) colors.accent else colors.fieldBorder,
-        animationSpec = Motion.medium(),
-        label = "chipBorder",
-    )
-    val content by animateColorAsState(
-        targetValue = if (selected) colors.onAccent else colors.textPrimary,
-        animationSpec = Motion.medium(),
-        label = "chipContent",
-    )
-    val iconTint by animateColorAsState(
-        targetValue = if (selected) colors.onAccent else colors.accentText,
-        animationSpec = Motion.medium(),
-        label = "chipIcon",
-    )
-    val scale by animateFloatAsState(
-        targetValue = if (selected) 1.03f else 1f,
-        animationSpec = Motion.medium(),
-        label = "chipScale",
-    )
+    val background = if (selected) colors.accent else colors.surface
+    val border = if (selected) colors.accent else colors.fieldBorder
+    val content = if (selected) colors.onAccent else colors.textPrimary
+    val iconTint = if (selected) colors.onAccent else colors.accentText
 
     Row(
         modifier = modifier
             .height(44.dp)
-            .graphicsLayer { scaleX = scale; scaleY = scale }
             .clip(AppShapes.Pill)
             .background(background)
             .border(1.dp, border, AppShapes.Pill)

@@ -1,15 +1,5 @@
 package com.aitutor.chatbot.app.ui.chat
 
-import androidx.compose.animation.AnimatedVisibility
-import androidx.compose.animation.core.RepeatMode
-import androidx.compose.animation.core.animateFloat
-import androidx.compose.animation.core.infiniteRepeatable
-import androidx.compose.animation.core.tween
-import androidx.compose.animation.core.rememberInfiniteTransition
-import androidx.compose.animation.fadeIn
-import androidx.compose.animation.fadeOut
-import androidx.compose.animation.slideInVertically
-import androidx.compose.animation.slideOutVertically
 import androidx.compose.foundation.Canvas
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
@@ -21,7 +11,6 @@ import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
-import androidx.compose.foundation.layout.navigationBarsPadding
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.shape.RoundedCornerShape
@@ -29,8 +18,6 @@ import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
-import androidx.compose.runtime.getValue
-import androidx.compose.runtime.remember
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
@@ -49,12 +36,13 @@ import androidx.compose.ui.text.withStyle
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.aitutor.chatbot.app.R
+import com.aitutor.chatbot.app.ui.components.DismissKeyboard
 import com.aitutor.chatbot.app.ui.components.SheetGrip
 import com.aitutor.chatbot.app.ui.icons.AppIcons
 import com.aitutor.chatbot.app.ui.theme.AppShapes
 import com.aitutor.chatbot.app.ui.theme.Dimens
-import com.aitutor.chatbot.app.ui.theme.Motion
 import com.aitutor.chatbot.app.ui.theme.Recording
+import com.aitutor.chatbot.app.ui.theme.bottomSafePadding
 import com.aitutor.chatbot.app.ui.theme.appColors
 import kotlin.math.abs
 import kotlin.math.sin
@@ -73,25 +61,18 @@ fun BoxScope.VoiceInputPanel(
     onAccept: () -> Unit,
 ) {
     val colors = MaterialTheme.appColors
-    AnimatedVisibility(
-        visible = visible,
-        enter = slideInVertically(
-            animationSpec = tween(Motion.Slow, easing = Motion.Emphasized),
-            initialOffsetY = { it },
-        ) + fadeIn(Motion.fast()),
-        exit = slideOutVertically(
-            animationSpec = tween(Motion.Medium, easing = Motion.Standard),
-            targetOffsetY = { it },
-        ) + fadeOut(Motion.fast()),
-        modifier = Modifier.align(Alignment.BottomCenter),
-    ) {
+    // Dictation replaces typing, so the keyboard goes away rather than sitting under the panel.
+    DismissKeyboard(whenVisible = visible)
+
+    if (visible) {
         Column(
             modifier = Modifier
+                .align(Alignment.BottomCenter)
                 .fillMaxWidth()
                 .shadow(24.dp, PanelShape, ambientColor = Color.Black, spotColor = Color.Black)
                 .clip(PanelShape)
                 .background(colors.surface)
-                .navigationBarsPadding()
+                .bottomSafePadding()
                 .padding(start = Dimens.spaceXxl, end = Dimens.spaceXxl, top = Dimens.spaceMd, bottom = 30.dp),
             horizontalAlignment = Alignment.CenterHorizontally,
         ) {
@@ -163,17 +144,6 @@ fun BoxScope.VoiceInputPanel(
 @Composable
 private fun RecordingLabel() {
     val colors = MaterialTheme.appColors
-    // The dot pulses so a paused recogniser is distinguishable from a live one at a glance.
-    val transition = rememberInfiniteTransition(label = "recording")
-    val pulse by transition.animateFloat(
-        initialValue = 0.4f,
-        targetValue = 1f,
-        animationSpec = infiniteRepeatable(
-            animation = tween(durationMillis = 900, easing = Motion.Standard),
-            repeatMode = RepeatMode.Reverse,
-        ),
-        label = "recordingPulse",
-    )
     Row(
         verticalAlignment = Alignment.CenterVertically,
         horizontalArrangement = Arrangement.spacedBy(Dimens.spaceSm),
@@ -182,7 +152,7 @@ private fun RecordingLabel() {
             modifier = Modifier
                 .size(8.dp)
                 .clip(AppShapes.Pill)
-                .background(Recording.copy(alpha = pulse))
+                .background(Recording)
         )
         Text(
             text = stringResource(R.string.voice_listening),
@@ -223,26 +193,12 @@ private fun LanguageChip() {
 }
 
 /**
- * The level meter. The design draws one frozen frame; here the envelope travels, so the bars read
- * as sound arriving rather than as a static graphic. It is decorative until a recogniser feeds it
- * real amplitudes, which is why it takes no input.
+ * The level meter, as the design draws it: one frozen frame. It is decorative until a recogniser
+ * feeds it real amplitudes, which is why it takes no input.
  */
 @Composable
 private fun Waveform(modifier: Modifier = Modifier) {
     val colors = MaterialTheme.appColors
-    val transition = rememberInfiniteTransition(label = "waveform")
-    val phase by transition.animateFloat(
-        initialValue = 0f,
-        targetValue = (2 * Math.PI).toFloat(),
-        animationSpec = infiniteRepeatable(
-            animation = tween(durationMillis = 1600, easing = Motion.Standard),
-            repeatMode = RepeatMode.Restart,
-        ),
-        label = "waveformPhase",
-    )
-    // A fixed per-bar offset keeps the meter irregular; without it the bars march in a clean sine.
-    val jitter = remember { List(BAR_COUNT) { (it * 37 % 11) / 11f } }
-
     Canvas(modifier = modifier) {
         val barWidth = 4.dp.toPx()
         val gap = 4.dp.toPx()
@@ -251,7 +207,8 @@ private fun Waveform(modifier: Modifier = Modifier) {
         val maxHeight = size.height
 
         repeat(BAR_COUNT) { index ->
-            val wave = abs(sin(phase + index * 0.55f + jitter[index] * 2f))
+            // A fixed, irregular profile — the same shape every time the panel opens.
+            val wave = abs(sin(index * 0.55f + (index * 37 % 11) / 11f * 2f))
             val height = (6.dp.toPx() + wave * (maxHeight - 6.dp.toPx())).coerceAtMost(maxHeight)
             drawRoundRect(
                 color = colors.accent.copy(alpha = 0.44f + wave * 0.56f),
@@ -263,29 +220,16 @@ private fun Waveform(modifier: Modifier = Modifier) {
     }
 }
 
-/** The mic, ringed by its own halo. The halo breathes with the recogniser, not with the bars. */
+/** The mic, ringed by its own halo. */
 @Composable
 private fun MicButton() {
     val colors = MaterialTheme.appColors
-    val transition = rememberInfiniteTransition(label = "mic")
-    val halo by transition.animateFloat(
-        initialValue = 0.82f,
-        targetValue = 1f,
-        animationSpec = infiniteRepeatable(
-            animation = tween(durationMillis = 1400, easing = Motion.Standard),
-            repeatMode = RepeatMode.Reverse,
-        ),
-        label = "micHalo",
-    )
     Box(
         modifier = Modifier.size(92.dp),
         contentAlignment = Alignment.Center,
     ) {
         Canvas(modifier = Modifier.matchParentSize()) {
-            drawCircle(
-                brush = SolidColor(colors.accentTint),
-                radius = size.minDimension / 2f * halo,
-            )
+            drawCircle(brush = SolidColor(colors.accentTint), radius = size.minDimension / 2f)
         }
         Box(
             modifier = Modifier

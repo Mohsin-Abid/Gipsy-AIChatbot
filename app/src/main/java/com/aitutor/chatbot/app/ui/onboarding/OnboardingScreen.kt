@@ -1,6 +1,5 @@
 package com.aitutor.chatbot.app.ui.onboarding
 
-import androidx.compose.animation.core.animateDpAsState
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
@@ -35,11 +34,9 @@ import com.aitutor.chatbot.app.ui.components.CircularNextButton
 import com.aitutor.chatbot.app.ui.components.HeroBadge
 import com.aitutor.chatbot.app.ui.components.OnboardingHero
 import com.aitutor.chatbot.app.ui.components.PrimaryCta
-import com.aitutor.chatbot.app.ui.components.Reveal
 import com.aitutor.chatbot.app.ui.theme.AITutorTheme
 import com.aitutor.chatbot.app.ui.theme.AppShapes
 import com.aitutor.chatbot.app.ui.theme.Dimens
-import com.aitutor.chatbot.app.ui.theme.Motion
 import com.aitutor.chatbot.app.ui.theme.ScreenPreviews
 import com.aitutor.chatbot.app.ui.theme.SystemBarIcons
 import com.aitutor.chatbot.app.ui.theme.appColors
@@ -117,12 +114,10 @@ private fun OnboardingPage(
                         .padding(bottom = 16.dp),
                     contentAlignment = Alignment.Center,
                 ) {
-                    Reveal(delayMillis = Motion.Stagger, visible = isCurrent) {
-                        when (page) {
-                            0 -> AskAnythingArt()
-                            1 -> SolveStepsArt()
-                            else -> StudyToolsArt()
-                        }
+                    when (page) {
+                        0 -> AskAnythingArt()
+                        1 -> SolveStepsArt()
+                        else -> StudyToolsArt()
                     }
                 }
             }
@@ -137,7 +132,7 @@ private fun OnboardingPage(
                 .padding(top = 28.dp, bottom = Dimens.spaceXxxl),
         ) {
             StepDots(current = page)
-            Reveal(delayMillis = Motion.Stagger * 2, visible = isCurrent, lift = 18.dp) {
+            Box {
                 Column {
                     Text(
                         text = stringResource(
@@ -217,16 +212,8 @@ private fun StepDots(current: Int, modifier: Modifier = Modifier) {
     ) {
         repeat(ONBOARDING_PAGES) { index ->
             val active = index == current
-            val width by animateDpAsState(
-                targetValue = if (active) 26.dp else 8.dp,
-                animationSpec = Motion.emphasized(durationMillis = Motion.Medium),
-                label = "dotWidth",
-            )
-            val tint by androidx.compose.animation.animateColorAsState(
-                targetValue = if (active) colors.accent else colors.accentRing,
-                animationSpec = Motion.medium(),
-                label = "dotTint",
-            )
+            val width = if (active) 26.dp else 8.dp
+            val tint = if (active) colors.accent else colors.accentRing
             Box(
                 modifier = Modifier
                     .width(width)

@@ -186,10 +186,10 @@ fun AppNavHost(
                 profile = resolved.profile,
                 language = resolved.language,
                 remindersEnabled = resolved.remindersEnabled,
-                darkModeEnabled = resolved.darkMode ?: false,
+                themeMode = resolved.themeMode,
                 voiceInputEnabled = resolved.voiceInputEnabled,
                 onRemindersChange = settingsViewModel::setRemindersEnabled,
-                onDarkModeChange = settingsViewModel::setDarkMode,
+                onThemeModeChange = settingsViewModel::setThemeMode,
                 onVoiceInputChange = settingsViewModel::setVoiceInputEnabled,
                 onToolClick = { tool -> navController.navigate(Route.Chat(tool.name)) },
                 onOpenChat = { entry ->

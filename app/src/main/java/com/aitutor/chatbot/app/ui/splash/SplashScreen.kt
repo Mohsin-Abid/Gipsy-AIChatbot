@@ -1,11 +1,5 @@
 package com.aitutor.chatbot.app.ui.splash
 
-import androidx.compose.animation.core.RepeatMode
-import androidx.compose.animation.core.animateFloat
-import androidx.compose.animation.core.animateFloatAsState
-import androidx.compose.animation.core.infiniteRepeatable
-import androidx.compose.animation.core.tween
-import androidx.compose.animation.core.rememberInfiniteTransition
 import androidx.compose.foundation.Canvas
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Arrangement
@@ -32,7 +26,6 @@ import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.drawscope.Stroke
-import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.semantics.contentDescription
 import androidx.compose.ui.semantics.semantics
@@ -44,7 +37,6 @@ import com.aitutor.chatbot.app.ui.components.LogoTile
 import com.aitutor.chatbot.app.ui.theme.AITutorTheme
 import com.aitutor.chatbot.app.ui.theme.AppShapes
 import com.aitutor.chatbot.app.ui.theme.Dimens
-import com.aitutor.chatbot.app.ui.theme.Motion
 import com.aitutor.chatbot.app.ui.theme.ScreenPreviews
 import com.aitutor.chatbot.app.ui.theme.SystemBarIcons
 import com.aitutor.chatbot.app.ui.theme.appColors
@@ -68,38 +60,19 @@ fun SplashScreen(
     // The whole page is the accent (or near-black in dark), so the clock must be light.
     SystemBarIcons(lightStatusBarIcons = true)
 
-    var started by remember { mutableStateOf(false) }
     var minimumElapsed by remember { mutableStateOf(false) }
 
-    // The entrance runs once, on its own clock, so a slow first read cannot restart it.
+    // The hold runs once, on its own clock, so a slow first read cannot restart it.
     LaunchedEffect(Unit) {
-        started = true
         delay(SPLASH_DURATION_MS)
         minimumElapsed = true
     }
 
-    // Leaving needs both: the animation finished, and the stored settings arrived — where this goes
-    // next depends on whether setup was ever completed, so guessing would land on the wrong screen.
+    // Leaving needs both: the minimum hold elapsed, and the stored settings arrived — where this
+    // goes next depends on whether setup was ever completed, so guessing lands on the wrong screen.
     LaunchedEffect(minimumElapsed, ready) {
         if (minimumElapsed && ready) onFinished()
     }
-
-    // The mark settles in once. A looping pulse would read as "waiting", not "arriving".
-    val markScale by animateFloatAsState(
-        targetValue = if (started) 1f else 0.84f,
-        animationSpec = Motion.emphasized(durationMillis = 700),
-        label = "markScale",
-    )
-    val markAlpha by animateFloatAsState(
-        targetValue = if (started) 1f else 0f,
-        animationSpec = Motion.emphasized(durationMillis = 520),
-        label = "markAlpha",
-    )
-    val loaded by animateFloatAsState(
-        targetValue = if (started) LOADING_PROGRESS else 0f,
-        animationSpec = Motion.emphasized(durationMillis = 1200, delayMillis = 320),
-        label = "loadingProgress",
-    )
 
     Box(
         modifier = modifier
@@ -146,7 +119,7 @@ fun SplashScreen(
             horizontalAlignment = Alignment.CenterHorizontally,
             verticalArrangement = Arrangement.spacedBy(Dimens.spaceLg),
         ) {
-            LoadingBar(onDark = onDark, progress = loaded)
+            LoadingBar(onDark = onDark, progress = LOADING_PROGRESS)
             Text(
                 text = stringResource(R.string.splash_loading),
                 style = MaterialTheme.typography.labelMedium,
@@ -162,18 +135,6 @@ private fun SplashBackdrop() {
     val colors = MaterialTheme.appColors
     val onDark = colors.isDark
     val ringBase = if (onDark) colors.accent else Color.White
-
-    // The rings breathe very slowly — enough to feel alive, too slow to notice as animation.
-    val transition = rememberInfiniteTransition(label = "ringBreath")
-    val breath by transition.animateFloat(
-        initialValue = 0.97f,
-        targetValue = 1.04f,
-        animationSpec = infiniteRepeatable(
-            animation = tween(durationMillis = 4200, easing = Motion.Standard),
-            repeatMode = RepeatMode.Reverse,
-        ),
-        label = "ringBreathScale",
-    )
 
     Canvas(modifier = Modifier.fillMaxSize()) {
         val centre = Offset(size.width / 2f, 372.dp.toPx())
@@ -194,7 +155,7 @@ private fun SplashBackdrop() {
         listOf(150.dp, 220.dp, 295.dp).forEachIndexed { index, radius ->
             drawCircle(
                 color = ringBase.copy(alpha = alphas[index]),
-                radius = radius.toPx() * breath,
+                radius = radius.toPx(),
                 center = centre,
                 style = hairline,
             )

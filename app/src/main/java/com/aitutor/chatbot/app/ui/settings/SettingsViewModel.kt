@@ -11,6 +11,7 @@ import com.aitutor.chatbot.app.domain.model.StudyGoal
 import com.aitutor.chatbot.app.domain.model.StudyLevel
 import com.aitutor.chatbot.app.domain.model.StudyTime
 import com.aitutor.chatbot.app.domain.model.Subject
+import com.aitutor.chatbot.app.domain.model.ThemeMode
 import kotlinx.coroutines.flow.SharingStarted
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.stateIn
@@ -57,8 +58,8 @@ class SettingsViewModel(
         preferences.setVoiceInputEnabled(enabled)
     }
 
-    fun setDarkMode(enabled: Boolean) = viewModelScope.launch {
-        preferences.setDarkMode(enabled)
+    fun setThemeMode(mode: ThemeMode) = viewModelScope.launch {
+        preferences.setThemeMode(mode)
     }
 
     // ---- Profile edits made outside setup ----

@@ -1,10 +1,5 @@
 package com.aitutor.chatbot.app.ui.chat
 
-import androidx.compose.animation.core.RepeatMode
-import androidx.compose.animation.core.animateFloat
-import androidx.compose.animation.core.infiniteRepeatable
-import androidx.compose.animation.core.rememberInfiniteTransition
-import androidx.compose.animation.core.tween
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
@@ -23,7 +18,6 @@ import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
-import androidx.compose.runtime.getValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.alpha
@@ -44,7 +38,6 @@ import com.aitutor.chatbot.app.domain.model.ScannedText
 import com.aitutor.chatbot.app.ui.icons.AppIcons
 import com.aitutor.chatbot.app.ui.theme.AppShapes
 import com.aitutor.chatbot.app.ui.theme.Dimens
-import com.aitutor.chatbot.app.ui.theme.Motion
 import com.aitutor.chatbot.app.ui.theme.appColors
 
 internal val BubbleMaxWidth = 272.dp
@@ -273,24 +266,10 @@ private fun AnswerAction(icon: ImageVector, contentDescription: String) {
     }
 }
 
-/**
- * The three dots shown while a reply is being generated. The design fixes each dot at a different
- * opacity; here that pattern travels along the row, so the wait reads as progress.
- */
+/** The three dots shown while a reply is being generated, at the opacities the design fixes. */
 @Composable
 internal fun TypingIndicator(modifier: Modifier = Modifier) {
     val colors = MaterialTheme.appColors
-    val transition = rememberInfiniteTransition(label = "typing")
-    val phase by transition.animateFloat(
-        initialValue = 0f,
-        targetValue = 3f,
-        animationSpec = infiniteRepeatable(
-            animation = tween(durationMillis = 1200, easing = Motion.Standard),
-            repeatMode = RepeatMode.Restart,
-        ),
-        label = "typingPhase",
-    )
-
     Row(
         modifier = modifier
             .height(36.dp)
@@ -301,13 +280,11 @@ internal fun TypingIndicator(modifier: Modifier = Modifier) {
         verticalAlignment = Alignment.CenterVertically,
         horizontalArrangement = Arrangement.spacedBy(5.dp),
     ) {
-        repeat(3) { index ->
-            // Distance from the travelling highlight, wrapped so dot 0 follows dot 2.
-            val distance = ((phase - index + 3f) % 3f).let { minOf(it, 3f - it) }
+        listOf(1f, 0.55f, 0.3f).forEach { opacity ->
             Box(
                 modifier = Modifier
                     .size(6.dp)
-                    .alpha(1f - distance * 0.35f)
+                    .alpha(opacity)
                     .clip(AppShapes.Pill)
                     .background(colors.accentText)
             )

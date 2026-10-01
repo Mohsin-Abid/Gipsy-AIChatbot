@@ -1,7 +1,5 @@
 package com.aitutor.chatbot.app.ui.components
 
-import androidx.compose.animation.animateColorAsState
-import androidx.compose.animation.core.animateDpAsState
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Box
@@ -20,7 +18,6 @@ import androidx.compose.ui.semantics.Role
 import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
 import com.aitutor.chatbot.app.ui.theme.AppShapes
-import com.aitutor.chatbot.app.ui.theme.Motion
 import com.aitutor.chatbot.app.ui.theme.appColors
 
 /**
@@ -39,16 +36,8 @@ fun AppSwitch(
     val colors = MaterialTheme.appColors
     val inset = 3.dp
     val thumbSize = height - inset * 2
-    val track by animateColorAsState(
-        targetValue = if (checked) colors.accent else colors.switchTrackOff,
-        animationSpec = Motion.medium(),
-        label = "switchTrack",
-    )
-    val thumbOffset by animateDpAsState(
-        targetValue = if (checked) width - thumbSize - inset else inset,
-        animationSpec = Motion.emphasized(durationMillis = Motion.Medium),
-        label = "switchThumb",
-    )
+    val track = if (checked) colors.accent else colors.switchTrackOff
+    val thumbOffset = if (checked) width - thumbSize - inset else inset
 
     Box(
         modifier = modifier

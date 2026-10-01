@@ -1,6 +1,5 @@
 package com.aitutor.chatbot.app.ui.components
 
-import androidx.compose.animation.animateColorAsState
 import androidx.compose.foundation.Canvas
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
@@ -29,7 +28,6 @@ import androidx.compose.ui.unit.dp
 import com.aitutor.chatbot.app.ui.icons.AppIcons
 import com.aitutor.chatbot.app.ui.theme.AppShapes
 import com.aitutor.chatbot.app.ui.theme.Dimens
-import com.aitutor.chatbot.app.ui.theme.Motion
 import com.aitutor.chatbot.app.ui.theme.appColors
 
 /** The full-width accent pill — the app's one primary action treatment. */
@@ -42,11 +40,7 @@ fun PrimaryCta(
     enabled: Boolean = true,
 ) {
     val colors = MaterialTheme.appColors
-    val fill by animateColorAsState(
-        targetValue = if (enabled) colors.accent else colors.accentRing,
-        animationSpec = Motion.medium(),
-        label = "ctaFill",
-    )
+    val fill = if (enabled) colors.accent else colors.accentRing
     Row(
         modifier = modifier
             .fillMaxWidth()

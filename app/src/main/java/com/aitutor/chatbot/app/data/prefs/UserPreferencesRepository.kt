@@ -5,7 +5,6 @@ import androidx.datastore.core.DataStore
 import androidx.datastore.preferences.core.Preferences
 import androidx.datastore.preferences.core.booleanPreferencesKey
 import androidx.datastore.preferences.core.edit
-import androidx.datastore.preferences.core.intPreferencesKey
 import androidx.datastore.preferences.core.stringPreferencesKey
 import androidx.datastore.preferences.preferencesDataStore
 import com.aitutor.chatbot.app.domain.model.AppLanguage
@@ -15,6 +14,7 @@ import com.aitutor.chatbot.app.domain.model.StudyGoal
 import com.aitutor.chatbot.app.domain.model.StudyLevel
 import com.aitutor.chatbot.app.domain.model.StudyTime
 import com.aitutor.chatbot.app.domain.model.Subject
+import com.aitutor.chatbot.app.domain.model.ThemeMode
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.map
 
@@ -27,8 +27,7 @@ data class UserSettings(
     val profile: StudentProfile = StudentProfile(),
     val remindersEnabled: Boolean = true,
     val voiceInputEnabled: Boolean = true,
-    /** `null` follows the system; the Profile switch sets it either way once touched. */
-    val darkMode: Boolean? = null,
+    val themeMode: ThemeMode = ThemeMode.Default,
 )
 
 /**
@@ -52,14 +51,7 @@ class UserPreferencesRepository(private val context: Context) {
         val dailyTime = stringPreferencesKey("profile_daily_time")
         val reminders = booleanPreferencesKey("reminders_enabled")
         val voiceInput = booleanPreferencesKey("voice_input_enabled")
-        val darkMode = intPreferencesKey("dark_mode")
-    }
-
-    /** Dark mode is three-state, and DataStore has no nullable boolean. */
-    private object DarkModeValue {
-        const val System = 0
-        const val Light = 1
-        const val Dark = 2
+        val themeMode = stringPreferencesKey("theme_mode")
     }
 
     val settings: Flow<UserSettings> = context.dataStore.data.map { prefs ->
@@ -83,11 +75,7 @@ class UserPreferencesRepository(private val context: Context) {
             ),
             remindersEnabled = prefs[Keys.reminders] ?: true,
             voiceInputEnabled = prefs[Keys.voiceInput] ?: true,
-            darkMode = when (prefs[Keys.darkMode]) {
-                DarkModeValue.Light -> false
-                DarkModeValue.Dark -> true
-                else -> null
-            },
+            themeMode = ThemeMode.fromNameOrDefault(prefs[Keys.themeMode]),
         )
     }
 
@@ -109,9 +97,7 @@ class UserPreferencesRepository(private val context: Context) {
 
     suspend fun setVoiceInputEnabled(enabled: Boolean) = edit { it[Keys.voiceInput] = enabled }
 
-    suspend fun setDarkMode(enabled: Boolean) = edit {
-        it[Keys.darkMode] = if (enabled) DarkModeValue.Dark else DarkModeValue.Light
-    }
+    suspend fun setThemeMode(mode: ThemeMode) = edit { it[Keys.themeMode] = mode.name }
 
     private suspend fun edit(block: (androidx.datastore.preferences.core.MutablePreferences) -> Unit) {
         context.dataStore.edit(block)

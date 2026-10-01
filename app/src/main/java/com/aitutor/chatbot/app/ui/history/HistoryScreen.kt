@@ -1,9 +1,6 @@
 package com.aitutor.chatbot.app.ui.history
 
 import android.text.format.DateUtils
-import androidx.compose.animation.AnimatedVisibility
-import androidx.compose.animation.fadeIn
-import androidx.compose.animation.fadeOut
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
@@ -40,7 +37,6 @@ import com.aitutor.chatbot.app.R
 import com.aitutor.chatbot.app.domain.model.HistoryEntry
 import com.aitutor.chatbot.app.domain.model.HistoryFilter
 import com.aitutor.chatbot.app.domain.model.HistoryGroup
-import com.aitutor.chatbot.app.ui.components.Reveal
 import com.aitutor.chatbot.app.ui.icons.AppIcons
 import com.aitutor.chatbot.app.ui.main.FilterChipRow
 import com.aitutor.chatbot.app.ui.main.GlyphTile
@@ -56,7 +52,6 @@ import com.aitutor.chatbot.app.ui.main.TabSidePadding
 import com.aitutor.chatbot.app.ui.theme.AITutorTheme
 import com.aitutor.chatbot.app.ui.theme.AppShapes
 import com.aitutor.chatbot.app.ui.theme.Dimens
-import com.aitutor.chatbot.app.ui.theme.Motion
 import com.aitutor.chatbot.app.ui.theme.SectionOverlineStyle
 import com.aitutor.chatbot.app.ui.theme.SampleContent
 import com.aitutor.chatbot.app.ui.theme.TallScreenPreviews
@@ -117,8 +112,7 @@ fun HistoryScreen(
             )
         }
 
-        Reveal(
-            delayMillis = Motion.Stagger,
+        Box(
             modifier = Modifier
                 .offset(y = (-28).dp)
                 .padding(horizontal = TabSidePadding),
@@ -145,13 +139,9 @@ fun HistoryScreen(
 
             HistoryGroup.entries.forEach { group ->
                 val entries = state.inGroup(group)
-                // A group with nothing in it under the current filter disappears entirely rather
+                // A group with nothing in it under the current filter is left out entirely rather
                 // than leaving a stranded heading.
-                AnimatedVisibility(
-                    visible = entries.isNotEmpty(),
-                    enter = fadeIn(Motion.medium()),
-                    exit = fadeOut(Motion.fast()),
-                ) {
+                if (entries.isNotEmpty()) {
                     Column(verticalArrangement = Arrangement.spacedBy(10.dp)) {
                         SectionOverline(text = stringResource(group.labelRes))
                         entries.forEach { entry ->

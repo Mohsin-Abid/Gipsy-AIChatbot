@@ -38,7 +38,6 @@ import androidx.compose.ui.unit.sp
 import com.aitutor.chatbot.app.R
 import com.aitutor.chatbot.app.domain.model.StudyTool
 import com.aitutor.chatbot.app.domain.model.ToolCategory
-import com.aitutor.chatbot.app.ui.components.Reveal
 import com.aitutor.chatbot.app.ui.icons.AppIcons
 import com.aitutor.chatbot.app.ui.main.CardCornerRing
 import com.aitutor.chatbot.app.ui.main.FilterChipRow
@@ -57,7 +56,6 @@ import com.aitutor.chatbot.app.ui.main.dividedRows
 import com.aitutor.chatbot.app.ui.theme.AITutorTheme
 import com.aitutor.chatbot.app.ui.theme.AppShapes
 import com.aitutor.chatbot.app.ui.theme.Dimens
-import com.aitutor.chatbot.app.ui.theme.Motion
 import com.aitutor.chatbot.app.ui.theme.OnHero
 import com.aitutor.chatbot.app.ui.theme.OverlineStyle
 import com.aitutor.chatbot.app.ui.theme.TallScreenPreviews
@@ -118,8 +116,7 @@ fun ToolsScreen(
             )
         }
 
-        Reveal(
-            delayMillis = Motion.Stagger,
+        Box(
             modifier = Modifier
                 .offset(y = (-48).dp)
                 .padding(horizontal = TabSidePadding),

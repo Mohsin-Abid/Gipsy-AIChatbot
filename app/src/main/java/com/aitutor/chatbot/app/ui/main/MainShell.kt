@@ -1,9 +1,5 @@
 package com.aitutor.chatbot.app.ui.main
 
-import androidx.compose.animation.AnimatedContent
-import androidx.compose.animation.fadeIn
-import androidx.compose.animation.fadeOut
-import androidx.compose.animation.togetherWith
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.fillMaxSize
@@ -27,12 +23,12 @@ import com.aitutor.chatbot.app.domain.model.AppLanguage
 import com.aitutor.chatbot.app.domain.model.HistoryEntry
 import com.aitutor.chatbot.app.domain.model.StudentProfile
 import com.aitutor.chatbot.app.domain.model.StudyTool
+import com.aitutor.chatbot.app.domain.model.ThemeMode
 import com.aitutor.chatbot.app.ui.history.HistoryScreen
 import com.aitutor.chatbot.app.ui.history.HistoryViewModel
 import com.aitutor.chatbot.app.ui.home.HomeScreen
 import com.aitutor.chatbot.app.ui.home.HomeViewModel
 import com.aitutor.chatbot.app.ui.profile.ProfileScreen
-import com.aitutor.chatbot.app.ui.theme.Motion
 import com.aitutor.chatbot.app.ui.theme.appColors
 import com.aitutor.chatbot.app.ui.tools.ToolsScreen
 
@@ -50,10 +46,10 @@ fun MainShell(
     profile: StudentProfile,
     language: AppLanguage,
     remindersEnabled: Boolean,
-    darkModeEnabled: Boolean,
+    themeMode: ThemeMode,
     voiceInputEnabled: Boolean,
     onRemindersChange: (Boolean) -> Unit,
-    onDarkModeChange: (Boolean) -> Unit,
+    onThemeModeChange: (ThemeMode) -> Unit,
     onVoiceInputChange: (Boolean) -> Unit,
     onToolClick: (StudyTool) -> Unit,
     onOpenChat: (HistoryEntry) -> Unit,
@@ -70,12 +66,7 @@ fun MainShell(
             .fillMaxSize()
             .background(colors.pageTint),
     ) {
-        AnimatedContent(
-            targetState = tab,
-            transitionSpec = { fadeIn(Motion.medium()).togetherWith(fadeOut(Motion.fast())) },
-            label = "tabContent",
-        ) { current ->
-            when (current) {
+        when (tab) {
                 MainTab.Home -> HomeTab(
                     userName = profile.name,
                     onToolClick = onToolClick,
@@ -90,16 +81,15 @@ fun MainShell(
                     profile = profile,
                     language = language,
                     remindersEnabled = remindersEnabled,
-                    darkModeEnabled = darkModeEnabled,
+                    themeMode = themeMode,
                     voiceInputEnabled = voiceInputEnabled,
                     onRemindersChange = onRemindersChange,
-                    onDarkModeChange = onDarkModeChange,
+                    onThemeModeChange = onThemeModeChange,
                     onVoiceInputChange = onVoiceInputChange,
                     onEditProfile = onEditProfile,
                     onOpenLanguage = onOpenLanguage,
                     onSeeProPlans = onSeeProPlans,
                 )
-            }
         }
 
         BottomNavBar(
@@ -108,7 +98,7 @@ fun MainShell(
             modifier = Modifier
                 .align(Alignment.BottomCenter)
                 .navigationBarsPadding()
-                .padding(bottom = 24.dp),
+                .padding(bottom = 12.dp),
         )
     }
 }

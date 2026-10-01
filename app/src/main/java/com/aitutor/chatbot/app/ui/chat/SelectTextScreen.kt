@@ -10,7 +10,6 @@ import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
-import androidx.compose.foundation.layout.navigationBarsPadding
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.statusBarsPadding
@@ -46,6 +45,7 @@ import com.aitutor.chatbot.app.ui.theme.Dimens
 import com.aitutor.chatbot.app.ui.theme.SampleContent
 import com.aitutor.chatbot.app.ui.theme.ScreenPreviews
 import com.aitutor.chatbot.app.ui.theme.SystemBarIcons
+import com.aitutor.chatbot.app.ui.theme.bottomSafePadding
 import com.aitutor.chatbot.app.ui.theme.appColors
 
 private val CardShape = RoundedCornerShape(22.dp)
@@ -356,7 +356,7 @@ private fun SelectFooter(onAskAboutSelection: () -> Unit) {
         modifier = Modifier
             .fillMaxWidth()
             .background(colors.surface)
-            .navigationBarsPadding()
+            .bottomSafePadding()
             .padding(start = 20.dp, end = 20.dp, top = Dimens.spaceLg, bottom = 26.dp),
         verticalArrangement = Arrangement.spacedBy(10.dp),
     ) {

@@ -1,6 +1,5 @@
 package com.aitutor.chatbot.app.ui.main
 
-import androidx.compose.animation.animateColorAsState
 import androidx.compose.foundation.Canvas
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
@@ -40,10 +39,8 @@ import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.aitutor.chatbot.app.ui.icons.AppIcons
-import com.aitutor.chatbot.app.ui.theme.AppInsets
 import com.aitutor.chatbot.app.ui.theme.AppShapes
 import com.aitutor.chatbot.app.ui.theme.Dimens
-import com.aitutor.chatbot.app.ui.theme.Motion
 import com.aitutor.chatbot.app.ui.theme.OnHero
 import com.aitutor.chatbot.app.ui.theme.SectionOverlineStyle
 import com.aitutor.chatbot.app.ui.theme.appColors
@@ -393,20 +390,18 @@ private fun FilterChip(
     onHero: Boolean,
 ) {
     val colors = MaterialTheme.appColors
-    val targetBackground = when {
+    val background = when {
         onHero && selected -> Color.White
         onHero -> OnHero.FillSoft
         selected -> colors.accent
         else -> colors.surface
     }
-    val targetForeground = when {
+    val foreground = when {
         onHero && selected -> colors.accent
         onHero -> Color.White
         selected -> colors.onAccent
         else -> colors.textPrimary
     }
-    val background by animateColorAsState(targetBackground, Motion.medium(), label = "chipBackground")
-    val foreground by animateColorAsState(targetForeground, Motion.medium(), label = "chipForeground")
 
     Box(
         modifier = Modifier

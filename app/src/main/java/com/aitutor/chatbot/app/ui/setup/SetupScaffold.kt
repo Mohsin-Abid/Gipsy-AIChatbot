@@ -1,6 +1,5 @@
 package com.aitutor.chatbot.app.ui.setup
 
-import androidx.compose.animation.animateColorAsState
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
@@ -9,7 +8,6 @@ import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.ColumnScope
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxSize
-import androidx.compose.foundation.layout.navigationBarsPadding
 import androidx.compose.foundation.layout.statusBarsPadding
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
@@ -35,13 +33,12 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.aitutor.chatbot.app.R
 import com.aitutor.chatbot.app.ui.components.PrimaryCta
-import com.aitutor.chatbot.app.ui.components.Reveal
 import com.aitutor.chatbot.app.ui.icons.AppIcons
 import com.aitutor.chatbot.app.ui.theme.AppShapes
 import com.aitutor.chatbot.app.ui.theme.AppInsets
 import com.aitutor.chatbot.app.ui.theme.Dimens
-import com.aitutor.chatbot.app.ui.theme.Motion
 import com.aitutor.chatbot.app.ui.theme.SystemBarIcons
+import com.aitutor.chatbot.app.ui.theme.bottomSafePadding
 import com.aitutor.chatbot.app.ui.theme.appColors
 
 const val SETUP_STEPS = 4
@@ -86,7 +83,7 @@ fun SetupScaffold(
                     .weight(1f)
                     .verticalScroll(rememberScrollState()),
             ) {
-                Reveal(modifier = Modifier.padding(start = SidePadding, end = SidePadding, top = Dimens.spaceLg)) {
+                Box(modifier = Modifier.padding(start = SidePadding, end = SidePadding, top = Dimens.spaceLg)) {
                     Column {
                         Text(
                             text = stringResource(R.string.setup_step_label, step, SETUP_STEPS).uppercase(),
@@ -111,12 +108,10 @@ fun SetupScaffold(
                     }
                 }
 
-                Reveal(
-                    delayMillis = Motion.Stagger,
+                Column(
                     modifier = Modifier.padding(start = SidePadding, end = SidePadding, top = 20.dp),
-                ) {
-                    Column(content = content)
-                }
+                    content = content,
+                )
 
                 // Clears the floating action bar so nothing hides under it.
                 // Keeps the last field clear of the floating action bar and the nav bar below it.
@@ -188,11 +183,7 @@ private fun StepProgress(step: Int, modifier: Modifier = Modifier) {
         horizontalArrangement = Arrangement.spacedBy(Dimens.spaceXs),
     ) {
         repeat(SETUP_STEPS) { index ->
-            val tint by animateColorAsState(
-                targetValue = if (index < step) colors.accent else colors.accentRing,
-                animationSpec = Motion.medium(),
-                label = "segmentTint",
-            )
+            val tint = if (index < step) colors.accent else colors.accentRing
             Box(
                 modifier = Modifier
                     .weight(1f)
@@ -222,7 +213,7 @@ private fun SetupActionBar(
                     0.40f to colors.pageTint,
                 )
             )
-            .navigationBarsPadding()
+            .bottomSafePadding()
             .padding(start = SidePadding, end = SidePadding, top = 40.dp, bottom = 28.dp),
         verticalArrangement = Arrangement.spacedBy(Dimens.spaceMd),
     ) {

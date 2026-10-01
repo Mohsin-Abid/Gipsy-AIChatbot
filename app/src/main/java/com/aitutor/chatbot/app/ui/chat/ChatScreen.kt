@@ -2,9 +2,6 @@ package com.aitutor.chatbot.app.ui.chat
 
 import android.text.format.DateUtils
 import androidx.annotation.StringRes
-import androidx.compose.animation.AnimatedVisibility
-import androidx.compose.animation.fadeIn
-import androidx.compose.animation.fadeOut
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
@@ -16,8 +13,6 @@ import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
-import androidx.compose.foundation.layout.imePadding
-import androidx.compose.foundation.layout.navigationBarsPadding
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.statusBarsPadding
@@ -32,7 +27,6 @@ import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
-import androidx.compose.runtime.remember
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
@@ -55,10 +49,10 @@ import com.aitutor.chatbot.app.ui.icons.AppIcons
 import com.aitutor.chatbot.app.ui.theme.AITutorTheme
 import com.aitutor.chatbot.app.ui.theme.AppShapes
 import com.aitutor.chatbot.app.ui.theme.Dimens
-import com.aitutor.chatbot.app.ui.theme.Motion
 import com.aitutor.chatbot.app.ui.theme.SampleContent
 import com.aitutor.chatbot.app.ui.theme.ScreenPreviews
 import com.aitutor.chatbot.app.ui.theme.SystemBarIcons
+import com.aitutor.chatbot.app.ui.theme.bottomSafePadding
 import com.aitutor.chatbot.app.ui.theme.appColors
 
 private val ComposerShape = RoundedCornerShape(28.dp)
@@ -93,7 +87,7 @@ fun ChatScreen(
 
     // A new message should be visible without the student scrolling for it.
     LaunchedEffect(state.messages.size) {
-        if (state.messages.isNotEmpty()) listState.animateScrollToItem(state.messages.lastIndex)
+        if (state.messages.isNotEmpty()) listState.scrollToItem(state.messages.lastIndex)
     }
 
     Box(
@@ -342,11 +336,7 @@ private fun Composer(
         modifier = Modifier
             .fillMaxWidth()
             .background(colors.surface)
-            // The keyboard lifts the composer; without this it would sit behind it. `imePadding`
-            // already accounts for the navigation bar while the keyboard is up, so the two do not
-            // stack — which is why the nav bar is applied first and the IME on top.
-            .navigationBarsPadding()
-            .imePadding()
+            .bottomSafePadding()
             .padding(start = Dimens.spaceLg + 2.dp, end = Dimens.spaceLg + 2.dp, top = 10.dp, bottom = Dimens.spaceXxl),
     ) {
         Row(
@@ -520,13 +510,7 @@ private fun EmptyThread(tool: StudyTool, modifier: Modifier = Modifier) {
 @Composable
 private fun ErrorBanner(@StringRes errorRes: Int?, onDismiss: () -> Unit) {
     val colors = MaterialTheme.appColors
-    AnimatedVisibility(
-        visible = errorRes != null,
-        enter = fadeIn(Motion.medium()),
-        exit = fadeOut(Motion.fast()),
-    ) {
-        // Held after errorRes clears so the exit transition has something to draw.
-        val shown = remember(errorRes) { errorRes }
+    if (errorRes != null) {
         Row(
             modifier = Modifier
                 .fillMaxWidth()
@@ -546,7 +530,7 @@ private fun ErrorBanner(@StringRes errorRes: Int?, onDismiss: () -> Unit) {
                 modifier = Modifier.size(16.dp),
             )
             Text(
-                text = shown?.let { stringResource(it) }.orEmpty(),
+                text = stringResource(errorRes),
                 style = MaterialTheme.typography.bodySmall,
                 color = colors.danger,
                 modifier = Modifier.weight(1f),

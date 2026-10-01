@@ -1,12 +1,5 @@
 package com.aitutor.chatbot.app.ui.language
 
-import androidx.compose.animation.animateColorAsState
-import androidx.compose.animation.core.animateFloatAsState
-import androidx.compose.animation.fadeIn
-import androidx.compose.animation.fadeOut
-import androidx.compose.animation.scaleIn
-import androidx.compose.animation.scaleOut
-import androidx.compose.animation.AnimatedVisibility
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
@@ -19,7 +12,6 @@ import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
-import androidx.compose.foundation.layout.navigationBarsPadding
 import androidx.compose.foundation.layout.statusBarsPadding
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
@@ -40,7 +32,6 @@ import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.SolidColor
-import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.SpanStyle
 import androidx.compose.ui.text.buildAnnotatedString
@@ -52,15 +43,14 @@ import androidx.compose.ui.unit.sp
 import com.aitutor.chatbot.app.R
 import com.aitutor.chatbot.app.domain.model.AppLanguage
 import com.aitutor.chatbot.app.ui.components.PrimaryCta
-import com.aitutor.chatbot.app.ui.components.Reveal
 import com.aitutor.chatbot.app.ui.icons.AppIcons
 import com.aitutor.chatbot.app.ui.theme.AITutorTheme
 import com.aitutor.chatbot.app.ui.theme.AppInsets
 import com.aitutor.chatbot.app.ui.theme.AppShapes
 import com.aitutor.chatbot.app.ui.theme.Dimens
-import com.aitutor.chatbot.app.ui.theme.Motion
 import com.aitutor.chatbot.app.ui.theme.ScreenPreviews
 import com.aitutor.chatbot.app.ui.theme.SystemBarIcons
+import com.aitutor.chatbot.app.ui.theme.bottomSafePadding
 import com.aitutor.chatbot.app.ui.theme.appColors
 
 private val CardShape = androidx.compose.foundation.shape.RoundedCornerShape(18.dp)
@@ -96,16 +86,15 @@ fun LanguageScreen(
                 // first-run setup: a back bar replaces the oversized welcome header.
                 SettingsTopBar(onBack = onBack)
             } else {
-                Reveal(modifier = Modifier.padding(start = 20.dp, end = 20.dp, top = 28.dp)) {
-                    LanguageHeader()
-                }
+                LanguageHeader(
+                    modifier = Modifier.padding(start = 20.dp, end = 20.dp, top = 28.dp)
+                )
             }
-            Reveal(
-                delayMillis = Motion.Stagger,
+            SearchField(
+                query = query,
+                onQueryChange = { query = it },
                 modifier = Modifier.padding(start = 20.dp, end = 20.dp, top = 20.dp),
-            ) {
-                SearchField(query = query, onQueryChange = { query = it })
-            }
+            )
 
             LazyColumn(
                 modifier = Modifier.weight(1f),
@@ -114,7 +103,7 @@ fun LanguageScreen(
                     start = 20.dp,
                     end = 20.dp,
                     top = 16.dp,
-                    bottom = 150.dp + AppInsets.bottom,
+                    bottom = 150.dp + AppInsets.bottomWithKeyboard,
                 ),
                 verticalArrangement = Arrangement.spacedBy(Dimens.spaceSm),
             ) {
@@ -123,7 +112,7 @@ fun LanguageScreen(
                         language = language,
                         selected = language == selected,
                         onClick = { onSelect(language) },
-                        modifier = Modifier.animateItem(),
+
                     )
                 }
                 if (matches.isEmpty()) {
@@ -282,38 +271,15 @@ private fun LanguageCard(
     modifier: Modifier = Modifier,
 ) {
     val colors = MaterialTheme.appColors
-    val spec = Motion.medium<Color>()
-    val background by animateColorAsState(
-        targetValue = if (selected) colors.accent else colors.surface,
-        animationSpec = spec,
-        label = "cardBackground",
-    )
-    val border by animateColorAsState(
-        targetValue = if (selected) colors.accent else colors.fieldBorder,
-        animationSpec = spec,
-        label = "cardBorder",
-    )
-    val title by animateColorAsState(
-        targetValue = if (selected) colors.onAccent else colors.textPrimary,
-        animationSpec = spec,
-        label = "cardTitle",
-    )
-    val subtitle by animateColorAsState(
-        targetValue = if (selected) Color.White.copy(alpha = 0.82f) else colors.textTertiary,
-        animationSpec = spec,
-        label = "cardSubtitle",
-    )
-    val scale by animateFloatAsState(
-        targetValue = if (selected) 1.015f else 1f,
-        animationSpec = Motion.medium(),
-        label = "cardScale",
-    )
+    val background = if (selected) colors.accent else colors.surface
+    val border = if (selected) colors.accent else colors.fieldBorder
+    val title = if (selected) colors.onAccent else colors.textPrimary
+    val subtitle = if (selected) Color.White.copy(alpha = 0.82f) else colors.textTertiary
 
     Row(
         modifier = modifier
             .fillMaxWidth()
             .height(64.dp)
-            .graphicsLayer { scaleX = scale; scaleY = scale }
             .clip(CardShape)
             .background(background)
             .border(1.dp, border, CardShape)
@@ -350,23 +316,14 @@ private fun LanguageCard(
 private fun SelectionIndicator(selected: Boolean) {
     val colors = MaterialTheme.appColors
     Box(modifier = Modifier.size(24.dp), contentAlignment = Alignment.Center) {
-        AnimatedVisibility(
-            visible = !selected,
-            enter = fadeIn(Motion.fast()),
-            exit = fadeOut(Motion.fast()),
-        ) {
+        if (!selected) {
             Box(
                 modifier = Modifier
                     .size(24.dp)
                     .clip(AppShapes.Pill)
                     .border(2.dp, colors.radioOff, AppShapes.Pill)
             )
-        }
-        AnimatedVisibility(
-            visible = selected,
-            enter = scaleIn(Motion.medium()) + fadeIn(Motion.fast()),
-            exit = scaleOut(Motion.fast()) + fadeOut(Motion.fast()),
-        ) {
+        } else {
             Box(
                 modifier = Modifier
                     .size(24.dp)
@@ -402,7 +359,7 @@ private fun BottomBar(
                     0.42f to colors.pageTint,
                 )
             )
-            .navigationBarsPadding()
+            .bottomSafePadding()
             .padding(start = 20.dp, end = 20.dp, top = 44.dp, bottom = 28.dp),
         verticalArrangement = Arrangement.spacedBy(Dimens.spaceMd),
     ) {

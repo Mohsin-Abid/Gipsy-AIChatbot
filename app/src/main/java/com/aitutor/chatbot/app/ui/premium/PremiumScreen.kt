@@ -1,10 +1,5 @@
 package com.aitutor.chatbot.app.ui.premium
 
-import androidx.compose.animation.animateColorAsState
-import androidx.compose.animation.core.animateDpAsState
-import androidx.compose.animation.AnimatedVisibility
-import androidx.compose.animation.scaleIn
-import androidx.compose.animation.scaleOut
 import androidx.compose.foundation.Canvas
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
@@ -48,16 +43,14 @@ import com.aitutor.chatbot.app.R
 import com.aitutor.chatbot.app.domain.model.PlanOffer
 import com.aitutor.chatbot.app.domain.model.ProBenefit
 import com.aitutor.chatbot.app.domain.model.ProPlan
-import com.aitutor.chatbot.app.ui.components.Reveal
 import com.aitutor.chatbot.app.ui.icons.AppIcons
 import com.aitutor.chatbot.app.ui.theme.AITutorTheme
-import com.aitutor.chatbot.app.ui.theme.AppInsets
 import com.aitutor.chatbot.app.ui.theme.AppShapes
 import com.aitutor.chatbot.app.ui.theme.Dimens
-import com.aitutor.chatbot.app.ui.theme.Motion
 import com.aitutor.chatbot.app.ui.theme.OnHero
 import com.aitutor.chatbot.app.ui.theme.ScreenPreviews
 import com.aitutor.chatbot.app.ui.theme.SystemBarIcons
+import com.aitutor.chatbot.app.ui.theme.bottomSafePadding
 import com.aitutor.chatbot.app.ui.theme.appColors
 
 private val SidePadding = 20.dp
@@ -121,8 +114,7 @@ fun PremiumScreen(
         ) {
             PremiumHero(onClose = onClose, onRestore = onRestore)
 
-            Reveal(
-                delayMillis = Motion.Stagger,
+            Box(
                 modifier = Modifier
                     .offset(y = (-40).dp)
                     .padding(horizontal = SidePadding),
@@ -254,7 +246,7 @@ private fun PremiumHero(onClose: () -> Unit, onRestore: () -> Unit) {
                 )
             }
 
-            Reveal(lift = 16.dp) {
+            Box {
                 Column(horizontalAlignment = Alignment.CenterHorizontally) {
                     CrownMark(modifier = Modifier.padding(top = Dimens.spaceXs))
                     Text(
@@ -402,21 +394,9 @@ private fun PlanCard(
     modifier: Modifier = Modifier,
 ) {
     val colors = MaterialTheme.appColors
-    val background by animateColorAsState(
-        targetValue = if (selected) colors.accentTint else colors.surface,
-        animationSpec = Motion.medium(),
-        label = "planBackground",
-    )
-    val borderColor by animateColorAsState(
-        targetValue = if (selected) colors.accent else colors.fieldBorder,
-        animationSpec = Motion.medium(),
-        label = "planBorder",
-    )
-    val borderWidth by animateDpAsState(
-        targetValue = if (selected) 2.dp else 1.5.dp,
-        animationSpec = Motion.medium(),
-        label = "planBorderWidth",
-    )
+    val background = if (selected) colors.accentTint else colors.surface
+    val borderColor = if (selected) colors.accent else colors.fieldBorder
+    val borderWidth = if (selected) 2.dp else 1.5.dp
 
     Box(modifier = modifier) {
         Column(
@@ -504,8 +484,6 @@ private fun PlanCheck(selected: Boolean, modifier: Modifier = Modifier) {
         modifier = modifier.size(22.dp),
         contentAlignment = Alignment.Center,
     ) {
-        // The ring stays put and the filled disc grows into it, so selection reads as one movement
-        // rather than two shapes swapping.
         if (!selected) {
             Box(
                 modifier = Modifier
@@ -513,12 +491,7 @@ private fun PlanCheck(selected: Boolean, modifier: Modifier = Modifier) {
                     .clip(AppShapes.Pill)
                     .border(2.dp, colors.radioOff, AppShapes.Pill)
             )
-        }
-        AnimatedVisibility(
-            visible = selected,
-            enter = scaleIn(Motion.emphasized(durationMillis = Motion.Fast), initialScale = 0.5f),
-            exit = scaleOut(Motion.fast(), targetScale = 0.5f),
-        ) {
+        } else {
             Box(
                 modifier = Modifier
                     .size(22.dp)
@@ -584,16 +557,13 @@ private fun PurchaseBar(
                     0.3f to colors.pageTint,
                 )
             )
-            .navigationBarsPadding()
+            .bottomSafePadding()
             .padding(start = SidePadding, end = SidePadding, top = 26.dp, bottom = 22.dp),
         horizontalAlignment = Alignment.CenterHorizontally,
         verticalArrangement = Arrangement.spacedBy(10.dp),
     ) {
-        val ctaBackground by animateColorAsState(
-            targetValue = if (state.canPurchase) colors.accent else colors.accent.copy(alpha = 0.4f),
-            animationSpec = Motion.medium(),
-            label = "ctaBackground",
-        )
+        val ctaBackground =
+            if (state.canPurchase) colors.accent else colors.accent.copy(alpha = 0.4f)
         Row(
             modifier = Modifier
                 .fillMaxWidth()

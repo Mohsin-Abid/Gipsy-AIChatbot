@@ -3,11 +3,15 @@ package com.aitutor.chatbot.app.ui.theme
 import android.app.Activity
 import androidx.compose.foundation.layout.WindowInsets
 import androidx.compose.foundation.layout.asPaddingValues
+import androidx.compose.foundation.layout.ime
 import androidx.compose.foundation.layout.navigationBars
 import androidx.compose.foundation.layout.statusBars
+import androidx.compose.foundation.layout.union
+import androidx.compose.foundation.layout.windowInsetsPadding
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.SideEffect
+import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalView
 import androidx.compose.ui.unit.Dp
 import androidx.core.view.WindowCompat
@@ -35,7 +39,37 @@ object AppInsets {
     /** How far the navigation bar, or the gesture handle, reaches up over the bottom. */
     val bottom: Dp
         @Composable get() = WindowInsets.navigationBars.asPaddingValues().calculateBottomPadding()
+
+    /**
+     * How far the bottom edge is obstructed once the keyboard is counted: the navigation bar, or
+     * the keyboard when it is open, whichever reaches higher. See [Modifier.bottomSafePadding].
+     */
+    val bottomWithKeyboard: Dp
+        @Composable get() = bottomSafeInsets().asPaddingValues().calculateBottomPadding()
 }
+
+/**
+ * The bottom edge a bar has to clear.
+ *
+ * The app draws edge to edge, which means the window no longer shrinks when the keyboard opens —
+ * the keyboard arrives as an inset over content that still believes it owns the full screen. A bar
+ * pinned to the bottom therefore sits *behind* the keyboard unless it accounts for it.
+ *
+ * [union] takes the larger of the two per edge, which is the whole point: chaining
+ * `navigationBarsPadding().imePadding()` instead **adds** them, lifting a bar by the height of a
+ * navigation bar that the open keyboard is already covering.
+ */
+@Composable
+private fun bottomSafeInsets(): WindowInsets = WindowInsets.navigationBars.union(WindowInsets.ime)
+
+/**
+ * Pads the bottom clear of the navigation bar, and of the keyboard whenever it is open.
+ *
+ * This is what every bar anchored to the bottom of a screen uses — composers, sheets, action bars —
+ * so none of them can end up underneath the keyboard.
+ */
+@Composable
+fun Modifier.bottomSafePadding(): Modifier = windowInsetsPadding(bottomSafeInsets())
 
 /**
  * Sets whether the system bar icons draw light or dark.
