@@ -40,6 +40,7 @@ object AppViewModelFactory {
                 savedStateHandle = createSavedStateHandle(),
                 chats = container().chats,
                 preferences = container().preferences,
+                attachments = container().attachments,
             )
         }
     }

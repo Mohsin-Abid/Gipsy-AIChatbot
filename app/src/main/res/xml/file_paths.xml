@@ -1,0 +1,8 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!--
+  The one place the camera app is allowed to write. A capture lands in the app's cache as a
+  temporary file; the kept copy is written by AttachmentStore into files/attachments/ afterwards.
+-->
+<paths>
+    <cache-path name="captures" path="captures/" />
+</paths>

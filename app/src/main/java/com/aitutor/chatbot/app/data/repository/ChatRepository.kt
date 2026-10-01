@@ -1,6 +1,8 @@
 package com.aitutor.chatbot.app.data.repository
 
 import com.aitutor.chatbot.app.data.api.TutorApiClient
+import com.aitutor.chatbot.app.data.api.TutorAttachment
+import com.aitutor.chatbot.app.data.attachment.AttachmentStore
 import com.aitutor.chatbot.app.data.api.TutorRequest
 import com.aitutor.chatbot.app.data.api.TutorTurn
 import com.aitutor.chatbot.app.data.local.ChatDao
@@ -12,11 +14,12 @@ import com.aitutor.chatbot.app.data.local.MessageEntity
 import com.aitutor.chatbot.app.domain.model.AnswerBlock
 import com.aitutor.chatbot.app.domain.model.ChatMessage
 import com.aitutor.chatbot.app.domain.model.ScanSource
-import com.aitutor.chatbot.app.domain.model.ScannedText
+import com.aitutor.chatbot.app.domain.model.Attachment
 import com.aitutor.chatbot.app.domain.model.StudentProfile
 import com.aitutor.chatbot.app.domain.model.StudyTool
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.map
+import java.io.File
 import java.util.Calendar
 
 /** A conversation's identity, without its messages. */
@@ -40,6 +43,7 @@ class ChatRepository(
     private val chatDao: ChatDao,
     private val messageDao: MessageDao,
     private val api: TutorApiClient,
+    private val attachments: AttachmentStore,
     private val now: () -> Long = System::currentTimeMillis,
 ) {
 
@@ -89,8 +93,7 @@ class ChatRepository(
     suspend fun send(
         chatId: Long,
         question: String,
-        attachment: ScannedText? = null,
-        attachedText: String? = null,
+        attachment: Attachment? = null,
         profile: StudentProfile = StudentProfile(),
     ): Result<Unit> {
         val chat = chatDao.byId(chatId) ?: return Result.failure(
@@ -107,7 +110,10 @@ class ChatRepository(
                 fromUser = true,
                 body = question,
                 attachmentSource = attachment?.source?.name,
-                attachmentWordCount = attachment?.wordCount,
+                attachmentName = attachment?.fileName,
+                attachmentMime = attachment?.mimeType,
+                attachmentSize = attachment?.sizeBytes,
+                attachmentPath = attachment?.localPath,
                 createdAt = now(),
             )
         )
@@ -118,7 +124,7 @@ class ChatRepository(
                 tool = tool,
                 subject = chat.subject,
                 question = question,
-                attachedText = attachedText,
+                attachment = attachment?.toTutorAttachment(),
                 history = priorTurns,
                 profile = profile,
             )
@@ -139,12 +145,28 @@ class ChatRepository(
 
     suspend fun rename(chatId: Long, title: String) = chatDao.rename(chatId, title)
 
+    /**
+     * Deletes a chat's messages, and the files they attached.
+     *
+     * The rows go either way; the copies on disk would not, and an attachment whose message is gone
+     * is unreachable — nothing would ever delete it. The files go first, because a failure there
+     * leaves rows that still point at them rather than orphans nothing can find.
+     */
     suspend fun clearMessages(chatId: Long) {
+        deleteAttachmentFiles(chatId)
         messageDao.clearChat(chatId)
         chatDao.touch(chatId, now())
     }
 
-    suspend fun delete(chatId: Long) = chatDao.delete(chatId)
+    /** Deletes a chat. Its messages cascade; its attachment files are removed here. */
+    suspend fun delete(chatId: Long) {
+        deleteAttachmentFiles(chatId)
+        chatDao.delete(chatId)
+    }
+
+    private suspend fun deleteAttachmentFiles(chatId: Long) {
+        messageDao.forChat(chatId).mapNotNull { it.toAttachment() }.forEach { attachments.delete(it) }
+    }
 }
 
 private fun ChatSummaryRow.toHeaderOrNull(): ChatHeader? {
@@ -189,9 +211,7 @@ private fun MessageEntity.toMessage(isNewest: Boolean): ChatMessage =
         ChatMessage.User(
             id = id,
             text = body,
-            attachment = ScanSource.fromNameOrNull(attachmentSource)?.let { source ->
-                ScannedText(source = source, wordCount = attachmentWordCount ?: 0)
-            },
+            attachment = toAttachment(),
         )
     } else {
         ChatMessage.Assistant(
@@ -201,6 +221,30 @@ private fun MessageEntity.toMessage(isNewest: Boolean): ChatMessage =
             showActions = isNewest,
         )
     }
+
+/**
+ * The attachment a row records, or null. Every field has to be present: a half-written row is a
+ * row from a build that stored something else, and is better shown as a plain message than as an
+ * attachment pointing at nothing.
+ */
+private fun MessageEntity.toAttachment(): Attachment? {
+    val source = ScanSource.fromNameOrNull(attachmentSource) ?: return null
+    return Attachment(
+        source = source,
+        fileName = attachmentName ?: return null,
+        mimeType = attachmentMime ?: return null,
+        sizeBytes = attachmentSize ?: return null,
+        localPath = attachmentPath ?: return null,
+    )
+}
+
+/** The upload's view of an attachment: the file on disk, plus what the service needs to name it. */
+private fun Attachment.toTutorAttachment(): TutorAttachment = TutorAttachment(
+    file = File(localPath),
+    fileName = fileName,
+    mimeType = mimeType,
+    sizeBytes = sizeBytes,
+)
 
 private fun MessageEntity.toTurn(): TutorTurn = TutorTurn(
     fromUser = fromUser,

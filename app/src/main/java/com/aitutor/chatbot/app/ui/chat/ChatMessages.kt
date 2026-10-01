@@ -1,5 +1,7 @@
 package com.aitutor.chatbot.app.ui.chat
 
+import android.text.format.Formatter
+
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
@@ -25,16 +27,18 @@ import androidx.compose.ui.draw.clip
 import androidx.compose.ui.draw.shadow
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.vector.ImageVector
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.SpanStyle
 import androidx.compose.ui.text.buildAnnotatedString
 import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.text.withStyle
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.aitutor.chatbot.app.R
 import com.aitutor.chatbot.app.domain.model.AnswerBlock
-import com.aitutor.chatbot.app.domain.model.ScannedText
+import com.aitutor.chatbot.app.domain.model.Attachment
 import com.aitutor.chatbot.app.ui.icons.AppIcons
 import com.aitutor.chatbot.app.ui.theme.AppShapes
 import com.aitutor.chatbot.app.ui.theme.Dimens
@@ -94,16 +98,31 @@ internal fun UserBubble(text: String, modifier: Modifier = Modifier) {
     )
 }
 
-/** The chip above a question, naming what was attached and how much of it there is. */
+/**
+ * The chip naming an attached file.
+ *
+ * Used both above a sent question and above the composer while one is pending — [onRemove] is what
+ * tells the two apart, adding the × that takes a not-yet-sent file back off.
+ */
 @Composable
-internal fun AttachmentChip(attachment: ScannedText, modifier: Modifier = Modifier) {
+internal fun AttachmentChip(
+    attachment: Attachment,
+    modifier: Modifier = Modifier,
+    onRemove: (() -> Unit)? = null,
+) {
     val colors = MaterialTheme.appColors
+    val context = LocalContext.current
     Row(
         modifier = modifier
             .clip(AttachmentShape)
             .background(colors.surface)
             .border(1.dp, colors.cardBorder, AttachmentShape)
-            .padding(start = Dimens.spaceSm, end = Dimens.spaceLg, top = Dimens.spaceSm, bottom = Dimens.spaceSm),
+            .padding(
+                start = Dimens.spaceSm,
+                end = if (onRemove == null) Dimens.spaceLg else Dimens.spaceXs,
+                top = Dimens.spaceSm,
+                bottom = Dimens.spaceSm,
+            ),
         verticalAlignment = Alignment.CenterVertically,
         horizontalArrangement = Arrangement.spacedBy(10.dp),
     ) {
@@ -121,17 +140,20 @@ internal fun AttachmentChip(attachment: ScannedText, modifier: Modifier = Modifi
                 modifier = Modifier.size(17.dp),
             )
         }
-        Column {
+        Column(modifier = Modifier.weight(1f, fill = false)) {
             Text(
-                text = stringResource(R.string.chat_attachment_title),
+                text = attachment.fileName,
                 style = MaterialTheme.typography.bodySmall.copy(fontWeight = FontWeight.SemiBold),
                 color = colors.textPrimary,
+                maxLines = 1,
+                overflow = TextOverflow.Ellipsis,
             )
             Text(
                 text = stringResource(
                     R.string.chat_attachment_detail,
                     stringResource(attachment.source.labelRes),
-                    attachment.wordCount,
+                    // Platform-formatted, so "1.2 MB" arrives already in the reader's locale.
+                    Formatter.formatShortFileSize(context, attachment.sizeBytes),
                 ),
                 style = MaterialTheme.typography.labelSmall.copy(
                     fontSize = 11.5.sp,
@@ -139,6 +161,22 @@ internal fun AttachmentChip(attachment: ScannedText, modifier: Modifier = Modifi
                 ),
                 color = colors.textTertiary,
             )
+        }
+        if (onRemove != null) {
+            Box(
+                modifier = Modifier
+                    .size(28.dp)
+                    .clip(AppShapes.Pill)
+                    .clickable(onClick = onRemove),
+                contentAlignment = Alignment.Center,
+            ) {
+                Icon(
+                    imageVector = AppIcons.Close,
+                    contentDescription = stringResource(R.string.cd_remove_attachment),
+                    tint = colors.textTertiary,
+                    modifier = Modifier.size(14.dp),
+                )
+            }
         }
     }
 }

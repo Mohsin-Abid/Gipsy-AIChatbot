@@ -34,6 +34,9 @@ fun ChatRoute(
         onSelectText = onSelectText,
         onClearMessages = viewModel::clearMessages,
         onErrorShown = viewModel::onErrorShown,
+        onFilePicked = viewModel::onFilePicked,
+        onAttachmentRemoved = viewModel::onAttachmentRemoved,
+        onNoCameraApp = viewModel::onNoCameraApp,
         modifier = modifier,
     )
 }

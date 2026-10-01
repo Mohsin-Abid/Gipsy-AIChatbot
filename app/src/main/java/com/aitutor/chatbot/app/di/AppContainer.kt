@@ -3,6 +3,7 @@ package com.aitutor.chatbot.app.di
 import android.content.Context
 import com.aitutor.chatbot.app.data.api.TutorApiClient
 import com.aitutor.chatbot.app.data.api.UnconfiguredTutorApiClient
+import com.aitutor.chatbot.app.data.attachment.AttachmentStore
 import com.aitutor.chatbot.app.data.local.AppDatabase
 import com.aitutor.chatbot.app.data.prefs.UserPreferencesRepository
 import com.aitutor.chatbot.app.data.repository.ChatRepository
@@ -20,6 +21,7 @@ import com.aitutor.chatbot.app.data.repository.ChatRepository
 interface AppContainer {
     val preferences: UserPreferencesRepository
     val chats: ChatRepository
+    val attachments: AttachmentStore
 }
 
 class DefaultAppContainer(context: Context) : AppContainer {
@@ -38,11 +40,14 @@ class DefaultAppContainer(context: Context) : AppContainer {
         UserPreferencesRepository(appContext)
     }
 
+    override val attachments: AttachmentStore by lazy { AttachmentStore(appContext) }
+
     override val chats: ChatRepository by lazy {
         ChatRepository(
             chatDao = database.chatDao(),
             messageDao = database.messageDao(),
             api = api,
+            attachments = attachments,
         )
     }
 }

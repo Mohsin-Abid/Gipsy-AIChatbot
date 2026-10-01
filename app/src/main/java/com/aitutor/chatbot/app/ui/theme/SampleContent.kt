@@ -9,7 +9,7 @@ import com.aitutor.chatbot.app.domain.model.ChatMessage
 import com.aitutor.chatbot.app.domain.model.HistoryEntry
 import com.aitutor.chatbot.app.domain.model.HistoryGroup
 import com.aitutor.chatbot.app.domain.model.ScanSource
-import com.aitutor.chatbot.app.domain.model.ScannedText
+import com.aitutor.chatbot.app.domain.model.Attachment
 import com.aitutor.chatbot.app.domain.model.StudyTool
 import java.util.concurrent.TimeUnit
 
@@ -33,7 +33,13 @@ object SampleContent {
         ChatMessage.User(
             id = 3,
             text = stringResource(R.string.chat_sample_q2),
-            attachment = ScannedText(source = ScanSource.Camera, wordCount = 48),
+            attachment = Attachment(
+                source = ScanSource.Camera,
+                fileName = "cell-cycle-notes.jpg",
+                mimeType = "image/jpeg",
+                sizeBytes = 486_000,
+                localPath = "",
+            ),
         ),
     )
 

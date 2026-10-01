@@ -10,4 +10,5 @@
     <exclude domain="database" path="aitutor.db-journal" />
     <exclude domain="database" path="aitutor.db-shm" />
     <exclude domain="database" path="aitutor.db-wal" />
+    <exclude domain="file" path="attachments/" />
 </full-backup-content>

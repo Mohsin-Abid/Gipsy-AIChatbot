@@ -42,6 +42,8 @@ import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.aitutor.chatbot.app.R
+import android.net.Uri
+import com.aitutor.chatbot.app.domain.model.Attachment
 import com.aitutor.chatbot.app.domain.model.ChatMessage
 import com.aitutor.chatbot.app.domain.model.ScanSource
 import com.aitutor.chatbot.app.domain.model.StudyTool
@@ -76,11 +78,15 @@ fun ChatScreen(
     onSelectText: () -> Unit,
     onClearMessages: () -> Unit,
     onErrorShown: () -> Unit,
+    onFilePicked: (Uri, ScanSource) -> Unit,
+    onAttachmentRemoved: () -> Unit,
+    onNoCameraApp: () -> Unit,
     modifier: Modifier = Modifier,
 ) {
     val colors = MaterialTheme.appColors
     var overlay by rememberSaveable { mutableStateOf(ChatOverlay.None) }
     val listState = rememberLazyListState()
+    val pickers = rememberAttachmentPickers(onPicked = onFilePicked, onNoCameraApp = onNoCameraApp)
     // A plain surface sits under the status bar, so the icons follow the theme.
     SystemBarIcons(lightStatusBarIcons = colors.isDark)
 
@@ -132,6 +138,9 @@ fun ChatScreen(
             Composer(
                 draft = state.draft,
                 canSend = state.canSend,
+                pendingAttachment = state.pendingAttachment,
+                attaching = state.attaching,
+                onAttachmentRemoved = onAttachmentRemoved,
                 onDraftChange = onDraftChange,
                 onScan = { overlay = ChatOverlay.Scan },
                 onVoice = { overlay = ChatOverlay.Voice },
@@ -142,7 +151,10 @@ fun ChatScreen(
         ScanSheet(
             visible = overlay == ChatOverlay.Scan,
             onDismiss = { overlay = ChatOverlay.None },
-            onPick = { _: ScanSource -> overlay = ChatOverlay.None },
+            onPick = { source ->
+                overlay = ChatOverlay.None
+                pickers.pick(source)
+            },
         )
         AnswerOptionsSheet(
             visible = overlay == ChatOverlay.AnswerOptions,
@@ -186,7 +198,9 @@ private fun MessageRow(
             verticalArrangement = Arrangement.spacedBy(Dimens.spaceXs),
         ) {
             message.attachment?.let { AttachmentChip(attachment = it) }
-            UserBubble(text = message.text)
+            // A file sent on its own is the whole message; an empty bubble beside it would just
+            // read as a rendering fault.
+            if (message.text.isNotBlank()) UserBubble(text = message.text)
         }
 
         is ChatMessage.Assistant -> Row(
@@ -326,6 +340,9 @@ private fun ChatHeader(
 private fun Composer(
     draft: String,
     canSend: Boolean,
+    pendingAttachment: Attachment?,
+    attaching: Boolean,
+    onAttachmentRemoved: () -> Unit,
     onDraftChange: (String) -> Unit,
     onScan: () -> Unit,
     onVoice: () -> Unit,
@@ -339,6 +356,23 @@ private fun Composer(
             .bottomSafePadding()
             .padding(start = Dimens.spaceLg + 2.dp, end = Dimens.spaceLg + 2.dp, top = 10.dp, bottom = Dimens.spaceXxl),
     ) {
+        // A file waiting to be sent, or the moment of copying it. The design draws this chip only
+        // on a sent message; before sending it needs a way back off, hence the ×.
+        if (attaching) {
+            Text(
+                text = stringResource(R.string.attach_preparing),
+                style = MaterialTheme.typography.bodySmall,
+                color = colors.textTertiary,
+                modifier = Modifier.padding(bottom = Dimens.spaceSm),
+            )
+        } else if (pendingAttachment != null) {
+            AttachmentChip(
+                attachment = pendingAttachment,
+                onRemove = onAttachmentRemoved,
+                modifier = Modifier.padding(bottom = Dimens.spaceSm),
+            )
+        }
+
         Row(
             modifier = Modifier
                 .fillMaxWidth()
@@ -564,6 +598,9 @@ private fun ChatScreenPreview() {
             onSelectText = {},
             onClearMessages = {},
             onErrorShown = {},
+            onFilePicked = { _, _ -> },
+            onAttachmentRemoved = {},
+            onNoCameraApp = {},
         )
     }
 }
@@ -580,6 +617,9 @@ private fun ChatEmptyPreview() {
             onSelectText = {},
             onClearMessages = {},
             onErrorShown = {},
+            onFilePicked = { _, _ -> },
+            onAttachmentRemoved = {},
+            onNoCameraApp = {},
         )
     }
 }

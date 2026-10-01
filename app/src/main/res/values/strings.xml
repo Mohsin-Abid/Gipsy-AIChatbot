@@ -311,8 +311,15 @@
     <string name="cd_chat_options">Chat options</string>
     <string name="cd_scan_text">Scan text from a photo or document</string>
     <string name="cd_speak_question">Speak your question</string>
-    <string name="chat_attachment_title">Scanned text</string>
-    <string name="chat_attachment_detail">%1$s · %2$d words</string>
+    <string name="chat_attachment_detail">%1$s · %2$s</string>
+    <string name="cd_remove_attachment">Remove attachment</string>
+    <string name="attach_preparing">Preparing file…</string>
+
+    <!-- Attachment failures, each said plainly rather than as one catch-all -->
+    <string name="attach_error_too_large">That file is larger than %1$s. Try a smaller one.</string>
+    <string name="attach_error_unreadable">That file could not be read.</string>
+    <string name="attach_error_unsupported">Only PDF and .docx documents can be attached.</string>
+    <string name="attach_error_no_camera">No camera app was found on this device.</string>
     <string name="chat_answer_from">%1$s answer</string>
     <string name="action_close">Close</string>
 
@@ -353,7 +360,7 @@
     <string name="scan_pdf_detail">Import a PDF file</string>
     <string name="scan_word">Word</string>
     <string name="scan_word_detail">Import a .docx file</string>
-    <string name="scan_privacy_note">Works offline · text stays on your device</string>
+    <string name="scan_privacy_note">Your file is sent to AI Tutor to answer your question</string>
 
     <!-- Voice input -->
     <string name="voice_listening">Listening…</string>

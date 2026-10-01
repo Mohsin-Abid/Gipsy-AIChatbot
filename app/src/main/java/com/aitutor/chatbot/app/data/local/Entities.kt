@@ -23,8 +23,8 @@ data class ChatEntity(
  * One message.
  *
  * [body] holds the text for a question and the serialized answer blocks for a reply — see
- * [MessageBodies]. The attachment is stored as its source and word count only: the photo or
- * document itself never enters the database, because only the extracted text was ever used.
+ * [MessageBodies]. An attachment is recorded by name, type, size and the path of the copy kept in
+ * app storage; the file's bytes stay on disk rather than being inlined into a row.
  */
 @Entity(
     tableName = "messages",
@@ -44,7 +44,10 @@ data class MessageEntity(
     val fromUser: Boolean,
     val body: String,
     val attachmentSource: String? = null,
-    val attachmentWordCount: Int? = null,
+    val attachmentName: String? = null,
+    val attachmentMime: String? = null,
+    val attachmentSize: Long? = null,
+    val attachmentPath: String? = null,
     val createdAt: Long,
 )
 

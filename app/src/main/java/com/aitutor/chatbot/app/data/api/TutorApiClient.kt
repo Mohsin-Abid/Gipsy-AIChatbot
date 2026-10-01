@@ -3,6 +3,7 @@ package com.aitutor.chatbot.app.data.api
 import com.aitutor.chatbot.app.domain.model.AnswerBlock
 import com.aitutor.chatbot.app.domain.model.StudentProfile
 import com.aitutor.chatbot.app.domain.model.StudyTool
+import java.io.File
 
 /**
  * What the app sends to get an answer.
@@ -14,9 +15,23 @@ data class TutorRequest(
     val tool: StudyTool,
     val subject: String,
     val question: String,
-    val attachedText: String? = null,
+    val attachment: TutorAttachment? = null,
     val history: List<TutorTurn> = emptyList(),
     val profile: StudentProfile = StudentProfile(),
+)
+
+/**
+ * A file travelling with a question.
+ *
+ * A [File] and its metadata, deliberately not bytes and not a chosen wire format: whether the real
+ * client sends multipart, base64 or a presigned upload is its own business, and keeping that choice
+ * out of here means plugging in the endpoint touches one implementation rather than this contract.
+ */
+data class TutorAttachment(
+    val file: File,
+    val fileName: String,
+    val mimeType: String,
+    val sizeBytes: Long,
 )
 
 /** One earlier turn, flattened to text — the wire format of whatever API is plugged in. */

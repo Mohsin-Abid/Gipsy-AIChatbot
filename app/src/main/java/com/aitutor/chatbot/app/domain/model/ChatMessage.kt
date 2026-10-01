@@ -3,7 +3,7 @@ package com.aitutor.chatbot.app.domain.model
 import androidx.annotation.StringRes
 import com.aitutor.chatbot.app.R
 
-/** Where an attachment's text came from. Each maps to one tile in the scan sheet. */
+/** Where an attached file came from. Each maps to one tile in the scan sheet. */
 enum class ScanSource(
     @param:StringRes val labelRes: Int,
     @param:StringRes val detailRes: Int,
@@ -20,12 +20,19 @@ enum class ScanSource(
 }
 
 /**
- * Text pulled off a photo or document and attached to a question. It carries the extracted text's
- * length, not the file — extraction happens on the device, and only the text is ever sent.
+ * A file attached to a question — a photo of a page, or a document.
+ *
+ * The app does not read the file: it is uploaded as it is and the tutor service makes sense of it.
+ * [localPath] is a copy kept in the app's own storage rather than the picked URI, because a URI
+ * borrowed from the photo picker or a file manager stops being readable once that grant lapses,
+ * and a thread is expected to still show what was sent weeks later.
  */
-data class ScannedText(
+data class Attachment(
     val source: ScanSource,
-    val wordCount: Int,
+    val fileName: String,
+    val mimeType: String,
+    val sizeBytes: Long,
+    val localPath: String,
 )
 
 /**
@@ -54,7 +61,7 @@ sealed interface ChatMessage {
     data class User(
         val id: Long,
         val text: String,
-        val attachment: ScannedText? = null,
+        val attachment: Attachment? = null,
     ) : ChatMessage
 
     data class Assistant(
