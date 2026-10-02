@@ -7,6 +7,7 @@ import com.aitutor.chatbot.app.data.attachment.AttachmentStore
 import com.aitutor.chatbot.app.data.local.AppDatabase
 import com.aitutor.chatbot.app.data.prefs.UserPreferencesRepository
 import com.aitutor.chatbot.app.data.repository.ChatRepository
+import com.aitutor.chatbot.app.data.voice.VoiceRecognizer
 
 /**
  * The app's dependencies, wired by hand.
@@ -22,6 +23,7 @@ interface AppContainer {
     val preferences: UserPreferencesRepository
     val chats: ChatRepository
     val attachments: AttachmentStore
+    val voice: VoiceRecognizer
 }
 
 class DefaultAppContainer(context: Context) : AppContainer {
@@ -41,6 +43,8 @@ class DefaultAppContainer(context: Context) : AppContainer {
     }
 
     override val attachments: AttachmentStore by lazy { AttachmentStore(appContext) }
+
+    override val voice: VoiceRecognizer by lazy { VoiceRecognizer(appContext) }
 
     override val chats: ChatRepository by lazy {
         ChatRepository(

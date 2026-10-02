@@ -18,6 +18,7 @@ fun ChatRoute(
     onBack: () -> Unit,
     onSelectText: () -> Unit,
     viewModelKey: String,
+    voiceInputEnabled: Boolean,
     modifier: Modifier = Modifier,
 ) {
     val viewModel: ChatViewModel = viewModel(
@@ -37,6 +38,12 @@ fun ChatRoute(
         onFilePicked = viewModel::onFilePicked,
         onAttachmentRemoved = viewModel::onAttachmentRemoved,
         onNoCameraApp = viewModel::onNoCameraApp,
+        onVoiceStarted = viewModel::onVoiceStarted,
+        onVoiceToggled = viewModel::onVoiceToggled,
+        onVoiceAccepted = viewModel::onVoiceAccepted,
+        onVoiceCancelled = viewModel::onVoiceCancelled,
+        onVoicePermissionDenied = viewModel::onVoicePermissionDenied,
+        voiceInputEnabled = voiceInputEnabled,
         modifier = modifier,
     )
 }

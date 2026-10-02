@@ -27,6 +27,7 @@ import com.aitutor.chatbot.app.ui.onboarding.OnboardingScreen
 import com.aitutor.chatbot.app.ui.premium.PremiumScreen
 import com.aitutor.chatbot.app.ui.premium.PremiumUiState
 import com.aitutor.chatbot.app.ui.settings.SettingsViewModel
+import com.aitutor.chatbot.app.ui.signin.SignInScreen
 import com.aitutor.chatbot.app.ui.setup.SetupDoneScreen
 import com.aitutor.chatbot.app.ui.setup.SetupGoalsScreen
 import com.aitutor.chatbot.app.ui.setup.SetupLevelScreen
@@ -41,6 +42,9 @@ sealed interface Route {
     @Serializable data object Splash : Route
     @Serializable data object Language : Route
     @Serializable data object Onboarding : Route
+
+    /** Google sign-in. The design puts it after onboarding and before setup. */
+    @Serializable data object SignIn : Route
     @Serializable data object SetupName : Route
     @Serializable data object SetupLevel : Route
     @Serializable data object SetupSubjects : Route
@@ -108,7 +112,18 @@ fun AppNavHost(
             )
         }
         composable<Route.Onboarding> {
-            OnboardingScreen(onFinished = { navController.navigate(Route.SetupName) })
+            OnboardingScreen(onFinished = { navController.navigate(Route.SignIn) })
+        }
+        composable<Route.SignIn> {
+            // Signing in is not wired yet, so both actions advance the same way the design's
+            // artboard links do. What "skip" means once requests are authenticated is decided
+            // when the auth layer lands, not here.
+            SignInScreen(
+                onContinueWithGoogle = { navController.navigate(Route.SetupName) },
+                onSkip = { navController.navigate(Route.SetupName) },
+                onOpenTerms = {},
+                onOpenPrivacy = {},
+            )
         }
         composable<Route.SetupName> {
             SetupNameScreen(
@@ -205,6 +220,7 @@ fun AppNavHost(
             ChatRoute(
                 onBack = { navController.popBackStack() },
                 onSelectText = { navController.navigate(Route.SelectText) },
+                voiceInputEnabled = settings.orDefault().voiceInputEnabled,
                 // A distinct key per conversation, so moving between two chats cannot reuse one
                 // ViewModel and briefly show the wrong thread.
                 viewModelKey = "${route.toolName}:${route.chatId}",

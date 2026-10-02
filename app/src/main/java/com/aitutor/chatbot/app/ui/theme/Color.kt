@@ -101,7 +101,35 @@ object OnHero {
     val FillSoft = Color(0x24FFFFFF)
     val FillFaint = Color(0x21FFFFFF)
     val Stroke = Color(0x33FFFFFF)
+    /** Between [Stroke] and [StrokeSoft] — the hairline around the sign-in hero's pills. */
+    val StrokeMedium = Color(0x2EFFFFFF)
     val StrokeSoft = Color(0x1FFFFFFF)
     val RingStrong = Color(0x1FFFFFFF)
     val RingSoft = Color(0x1AFFFFFF)
+    /** The widest of the sign-in hero's concentric rings, barely there. */
+    val RingFaint = Color(0x14FFFFFF)
+}
+
+/**
+ * The Google sign-in button's colours, which are **not** this app's to choose.
+ *
+ * Google's sign-in branding guidelines fix the fill, the stroke and the label for both themes, and
+ * a button drawn in anything else is off-brand. So these deliberately sit outside [AppColors]:
+ * changing the app's accent must not touch them, and nothing but that one button may read them.
+ *
+ * Light and dark are picked by argument rather than by theme lookup, because this object has to
+ * stay free of Compose — it is data, not a composition local.
+ */
+object GoogleBrand {
+    fun fill(isDark: Boolean): Color = if (isDark) DarkFill else LightFill
+    fun stroke(isDark: Boolean): Color = if (isDark) DarkStroke else LightStroke
+    fun label(isDark: Boolean): Color = if (isDark) DarkLabel else LightLabel
+
+    private val LightFill = Color(0xFFFFFFFF)
+    private val LightStroke = Color(0xFF747775)
+    private val LightLabel = Color(0xFF1F1F1F)
+
+    private val DarkFill = Color(0xFF131314)
+    private val DarkStroke = Color(0xFF8E918F)
+    private val DarkLabel = Color(0xFFE3E3E3)
 }

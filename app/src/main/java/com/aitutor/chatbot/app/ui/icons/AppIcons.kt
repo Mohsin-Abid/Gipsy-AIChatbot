@@ -352,6 +352,38 @@ object AppIcons {
     val Shield: ImageVector by lazy {
         stroked("Shield", "M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z", width = 1.8f)
     }
+
+    // ---- Sign-in benefits. Transcribed from the SignInC artboard. ----
+
+    val CloudCheck: ImageVector by lazy {
+        stroked(
+            "CloudCheck",
+            "M17.5 19H7a5 5 0 1 1 1.2-9.9A6 6 0 0 1 19.5 11a4 4 0 0 1-2 8z",
+            "M9.5 14.5l2 2 3.5-3.5",
+            width = 2f,
+        )
+    }
+
+    /** [Shield] with a tick inside it. Kept separate, since the plain shield heads a Profile row. */
+    val ShieldCheck: ImageVector by lazy {
+        stroked(
+            "ShieldCheck",
+            "M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z",
+            "M9 12l2 2 4-4",
+            width = 2f,
+        )
+    }
+
+    /** A monitor beside a phone. The design draws it as two rounded rectangles and a stand. */
+    val Devices: ImageVector by lazy {
+        stroked(
+            "Devices",
+            "M4 4h10a2 2 0 0 1 2 2v6a2 2 0 0 1-2 2H4a2 2 0 0 1-2-2V6a2 2 0 0 1 2-2z",
+            "M6 18h6",
+            "M18.5 8h2a1.5 1.5 0 0 1 1.5 1.5v9a1.5 1.5 0 0 1-1.5 1.5h-2A1.5 1.5 0 0 1 17 18.5v-9A1.5 1.5 0 0 1 18.5 8z",
+            width = 2f,
+        )
+    }
     val Help: ImageVector by lazy {
         stroked("Help", circle(12f, 12f, 9f), "M9.1 9a3 3 0 0 1 5.8 1c0 2-3 3-3 3", "M12 17h.01", width = 1.8f)
     }

@@ -50,16 +50,21 @@ import kotlin.math.sin
 private val PanelShape = RoundedCornerShape(topStart = 28.dp, topEnd = 28.dp)
 private const val BAR_COUNT = 24
 
+/** How much of each bar stays visible in silence, so the meter never collapses to a line. */
+private const val SILENT_FLOOR = 0.12f
+
 /**
  * Dictation. Unlike the other overlays this one has no scrim — the thread stays fully visible
  * behind it, because what is being dictated is a reply to what is on screen.
  */
 @Composable
 fun BoxScope.VoiceInputPanel(
-    visible: Boolean,
+    state: VoiceUiState?,
     onDismiss: () -> Unit,
     onAccept: () -> Unit,
+    onToggleListening: () -> Unit,
 ) {
+    val visible = state != null
     val colors = MaterialTheme.appColors
     // Dictation replaces typing, so the keyboard goes away rather than sitting under the panel.
     DismissKeyboard(whenVisible = visible)
@@ -78,39 +83,55 @@ fun BoxScope.VoiceInputPanel(
         ) {
             SheetGrip()
 
+            val panel = state ?: return@Column
+
             Row(
                 modifier = Modifier
                     .fillMaxWidth()
                     .padding(top = Dimens.spaceLg + 2.dp),
                 verticalAlignment = Alignment.CenterVertically,
-                horizontalArrangement = Arrangement.SpaceBetween,
+                horizontalArrangement = Arrangement.Start,
             ) {
-                RecordingLabel()
-                LanguageChip()
+                RecordingLabel(listening = panel.listening)
             }
 
-            // The grey tail is what has not been confirmed yet — a real recogniser returns it as
-            // a partial result, and it firms up as more audio arrives.
-            Text(
-                text = buildAnnotatedString {
-                    append(stringResource(R.string.voice_transcript_final))
-                    append(" ")
-                    withStyle(SpanStyle(color = colors.textTertiary)) {
-                        append(stringResource(R.string.voice_transcript_partial))
-                    }
-                },
-                style = MaterialTheme.typography.headlineSmall.copy(
-                    fontSize = 20.sp,
-                    lineHeight = 28.sp,
-                    fontWeight = FontWeight.SemiBold,
-                ),
-                color = colors.textPrimary,
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .padding(top = 20.dp),
-            )
+            if (panel.errorRes != null) {
+                Text(
+                    text = stringResource(panel.errorRes),
+                    style = MaterialTheme.typography.bodyLarge.copy(lineHeight = 24.sp),
+                    color = colors.danger,
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .padding(top = 20.dp),
+                )
+            } else {
+                // The grey tail is what the recogniser has not committed to yet; it firms up into
+                // the darker text as more audio arrives.
+                Text(
+                    text = buildAnnotatedString {
+                        append(panel.transcript)
+                        if (panel.transcript.isNotBlank() && panel.partial.isNotBlank()) append(" ")
+                        withStyle(SpanStyle(color = colors.textTertiary)) { append(panel.partial) }
+                        if (!panel.canAccept) {
+                            withStyle(SpanStyle(color = colors.textTertiary)) {
+                                append(stringResource(R.string.voice_prompt))
+                            }
+                        }
+                    },
+                    style = MaterialTheme.typography.headlineSmall.copy(
+                        fontSize = 20.sp,
+                        lineHeight = 28.sp,
+                        fontWeight = FontWeight.SemiBold,
+                    ),
+                    color = colors.textPrimary,
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .padding(top = 20.dp),
+                )
+            }
 
             Waveform(
+                level = panel.level,
                 modifier = Modifier
                     .fillMaxWidth()
                     .padding(top = 22.dp)
@@ -129,12 +150,13 @@ fun BoxScope.VoiceInputPanel(
                     contentDescription = stringResource(R.string.cd_cancel_voice),
                     onClick = onDismiss,
                 )
-                MicButton()
+                MicButton(listening = panel.listening, onClick = onToggleListening)
                 RoundAction(
                     icon = AppIcons.Check,
                     contentDescription = stringResource(R.string.cd_accept_voice),
                     onClick = onAccept,
                     filled = true,
+                    enabled = panel.canAccept,
                 )
             }
         }
@@ -142,7 +164,7 @@ fun BoxScope.VoiceInputPanel(
 }
 
 @Composable
-private fun RecordingLabel() {
+private fun RecordingLabel(listening: Boolean) {
     val colors = MaterialTheme.appColors
     Row(
         verticalAlignment = Alignment.CenterVertically,
@@ -152,52 +174,26 @@ private fun RecordingLabel() {
             modifier = Modifier
                 .size(8.dp)
                 .clip(AppShapes.Pill)
-                .background(Recording)
+                // The dot is the one thing saying whether the mic is actually open.
+                .background(if (listening) Recording else colors.textTertiary)
         )
         Text(
-            text = stringResource(R.string.voice_listening),
+            text = stringResource(if (listening) R.string.voice_listening else R.string.voice_paused),
             style = MaterialTheme.typography.bodyMedium.copy(fontWeight = FontWeight.SemiBold),
             color = colors.textPrimary,
         )
     }
 }
 
-@Composable
-private fun LanguageChip() {
-    val colors = MaterialTheme.appColors
-    Row(
-        modifier = Modifier
-            .height(30.dp)
-            .clip(AppShapes.Pill)
-            .border(1.dp, colors.cardBorder, AppShapes.Pill)
-            .clickable { }
-            .padding(horizontal = Dimens.spaceMd),
-        verticalAlignment = Alignment.CenterVertically,
-        horizontalArrangement = Arrangement.spacedBy(Dimens.spaceXs),
-    ) {
-        Text(
-            text = stringResource(R.string.lang_english),
-            style = MaterialTheme.typography.labelLarge.copy(
-                fontSize = 12.5.sp,
-                fontWeight = FontWeight.SemiBold,
-            ),
-            color = colors.textSecondary,
-        )
-        Icon(
-            imageVector = AppIcons.ChevronDown,
-            contentDescription = null,
-            tint = colors.textSecondary,
-            modifier = Modifier.size(13.dp),
-        )
-    }
-}
-
 /**
- * The level meter, as the design draws it: one frozen frame. It is decorative until a recogniser
- * feeds it real amplitudes, which is why it takes no input.
+ * The level meter, driven by the microphone.
+ *
+ * Each bar has a fixed share of the full height, so the profile stays the irregular shape the design
+ * draws; [level] scales the whole thing. A floor keeps the bars visible at silence — a meter that
+ * collapses to nothing reads as broken rather than quiet.
  */
 @Composable
-private fun Waveform(modifier: Modifier = Modifier) {
+private fun Waveform(level: Float, modifier: Modifier = Modifier) {
     val colors = MaterialTheme.appColors
     Canvas(modifier = modifier) {
         val barWidth = 4.dp.toPx()
@@ -207,8 +203,9 @@ private fun Waveform(modifier: Modifier = Modifier) {
         val maxHeight = size.height
 
         repeat(BAR_COUNT) { index ->
-            // A fixed, irregular profile — the same shape every time the panel opens.
-            val wave = abs(sin(index * 0.55f + (index * 37 % 11) / 11f * 2f))
+            // A fixed, irregular profile, scaled by how loud the room actually is.
+            val shape = abs(sin(index * 0.55f + (index * 37 % 11) / 11f * 2f))
+            val wave = shape * (SILENT_FLOOR + (1f - SILENT_FLOOR) * level.coerceIn(0f, 1f))
             val height = (6.dp.toPx() + wave * (maxHeight - 6.dp.toPx())).coerceAtMost(maxHeight)
             drawRoundRect(
                 color = colors.accent.copy(alpha = 0.44f + wave * 0.56f),
@@ -220,9 +217,9 @@ private fun Waveform(modifier: Modifier = Modifier) {
     }
 }
 
-/** The mic, ringed by its own halo. */
+/** The mic, ringed by its own halo. Tapping it holds and resumes listening. */
 @Composable
-private fun MicButton() {
+private fun MicButton(listening: Boolean, onClick: () -> Unit) {
     val colors = MaterialTheme.appColors
     Box(
         modifier = Modifier.size(92.dp),
@@ -237,12 +234,14 @@ private fun MicButton() {
                 .shadow(12.dp, AppShapes.Pill, ambientColor = colors.accent, spotColor = colors.accent)
                 .clip(AppShapes.Pill)
                 .background(colors.accent)
-                .clickable { },
+                .clickable(onClick = onClick),
             contentAlignment = Alignment.Center,
         ) {
             Icon(
                 imageVector = AppIcons.Mic,
-                contentDescription = stringResource(R.string.cd_pause_listening),
+                contentDescription = stringResource(
+                    if (listening) R.string.cd_pause_listening else R.string.cd_resume_listening
+                ),
                 tint = colors.onAccent,
                 modifier = Modifier.size(28.dp),
             )
@@ -256,14 +255,22 @@ private fun RoundAction(
     contentDescription: String,
     onClick: () -> Unit,
     filled: Boolean = false,
+    enabled: Boolean = true,
 ) {
     val colors = MaterialTheme.appColors
     Box(
         modifier = Modifier
             .size(52.dp)
             .clip(AppShapes.Pill)
-            .background(if (filled) colors.accent else colors.accentTint)
-            .clickable(onClick = onClick),
+            .background(
+                when {
+                    // Dimmed rather than hidden: it keeps its place in the row.
+                    filled && !enabled -> colors.accent.copy(alpha = 0.4f)
+                    filled -> colors.accent
+                    else -> colors.accentTint
+                }
+            )
+            .clickable(enabled = enabled, onClick = onClick),
         contentAlignment = Alignment.Center,
     ) {
         Icon(

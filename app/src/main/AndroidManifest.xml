@@ -3,6 +3,9 @@
 
     <uses-permission android:name="android.permission.INTERNET" />
 
+    <!-- Dictation. Asked for at the moment the mic is tapped, not at launch. -->
+    <uses-permission android:name="android.permission.RECORD_AUDIO" />
+
     <!--
       Needed on API 30+ for ACTION_IMAGE_CAPTURE to resolve: without it the camera app is invisible
       to this process and the Camera tile would quietly do nothing.
@@ -14,6 +17,15 @@
     <queries>
         <intent>
             <action android:name="android.media.action.IMAGE_CAPTURE" />
+        </intent>
+        <!--
+          Speech recognition is not part of Android: it is a service some installed app provides.
+          Without this entry, package visibility on API 30+ hides every such service from this
+          process and SpeechRecognizer.isRecognitionAvailable() answers false even on a device that
+          has one.
+        -->
+        <intent>
+            <action android:name="android.speech.RecognitionService" />
         </intent>
     </queries>
 

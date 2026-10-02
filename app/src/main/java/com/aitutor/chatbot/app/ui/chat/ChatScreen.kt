@@ -2,6 +2,10 @@ package com.aitutor.chatbot.app.ui.chat
 
 import android.text.format.DateUtils
 import androidx.annotation.StringRes
+import androidx.activity.compose.rememberLauncherForActivityResult
+import androidx.activity.result.contract.ActivityResultContracts
+import androidx.core.app.ActivityCompat
+import androidx.core.content.ContextCompat
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
@@ -36,12 +40,16 @@ import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.SolidColor
 import androidx.compose.ui.graphics.vector.ImageVector
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.aitutor.chatbot.app.R
+import android.Manifest
+import android.app.Activity
+import android.content.pm.PackageManager
 import android.net.Uri
 import com.aitutor.chatbot.app.domain.model.Attachment
 import com.aitutor.chatbot.app.domain.model.ChatMessage
@@ -81,12 +89,35 @@ fun ChatScreen(
     onFilePicked: (Uri, ScanSource) -> Unit,
     onAttachmentRemoved: () -> Unit,
     onNoCameraApp: () -> Unit,
+    onVoiceStarted: () -> Unit,
+    onVoiceToggled: () -> Unit,
+    onVoiceAccepted: () -> Unit,
+    onVoiceCancelled: () -> Unit,
+    onVoicePermissionDenied: (askableAgain: Boolean) -> Unit,
+    voiceInputEnabled: Boolean,
     modifier: Modifier = Modifier,
 ) {
     val colors = MaterialTheme.appColors
     var overlay by rememberSaveable { mutableStateOf(ChatOverlay.None) }
     val listState = rememberLazyListState()
     val pickers = rememberAttachmentPickers(onPicked = onFilePicked, onNoCameraApp = onNoCameraApp)
+    val context = LocalContext.current
+
+    // Asked for when the mic is tapped, not at launch — at the moment its purpose is obvious.
+    val requestMicrophone = rememberLauncherForActivityResult(
+        contract = ActivityResultContracts.RequestPermission(),
+    ) { granted ->
+        if (granted) {
+            onVoiceStarted()
+        } else {
+            // After a refusal, a false rationale means the system will not ask again — so the
+            // message has to point at Settings rather than invite another tap that does nothing.
+            val activity = context as? Activity
+            val askableAgain = activity != null && ActivityCompat
+                .shouldShowRequestPermissionRationale(activity, Manifest.permission.RECORD_AUDIO)
+            onVoicePermissionDenied(askableAgain)
+        }
+    }
     // A plain surface sits under the status bar, so the icons follow the theme.
     SystemBarIcons(lightStatusBarIcons = colors.isDark)
 
@@ -143,7 +174,16 @@ fun ChatScreen(
                 onAttachmentRemoved = onAttachmentRemoved,
                 onDraftChange = onDraftChange,
                 onScan = { overlay = ChatOverlay.Scan },
-                onVoice = { overlay = ChatOverlay.Voice },
+                voiceInputEnabled = voiceInputEnabled,
+                onVoice = {
+                    if (ContextCompat.checkSelfPermission(context, Manifest.permission.RECORD_AUDIO)
+                        == PackageManager.PERMISSION_GRANTED
+                    ) {
+                        onVoiceStarted()
+                    } else {
+                        requestMicrophone.launch(Manifest.permission.RECORD_AUDIO)
+                    }
+                },
                 onSend = onSend,
             )
         }
@@ -174,9 +214,10 @@ fun ChatScreen(
             },
         )
         VoiceInputPanel(
-            visible = overlay == ChatOverlay.Voice,
-            onDismiss = { overlay = ChatOverlay.None },
-            onAccept = { overlay = ChatOverlay.None },
+            state = state.voice,
+            onDismiss = onVoiceCancelled,
+            onAccept = onVoiceAccepted,
+            onToggleListening = onVoiceToggled,
         )
     }
 }
@@ -345,6 +386,7 @@ private fun Composer(
     onAttachmentRemoved: () -> Unit,
     onDraftChange: (String) -> Unit,
     onScan: () -> Unit,
+    voiceInputEnabled: Boolean,
     onVoice: () -> Unit,
     onSend: () -> Unit,
 ) {
@@ -412,11 +454,14 @@ private fun Composer(
                     modifier = Modifier.fillMaxWidth(),
                 )
             }
-            ComposerButton(
-                icon = AppIcons.Mic,
-                contentDescription = stringResource(R.string.cd_speak_question),
-                onClick = onVoice,
-            )
+            // Hidden rather than disabled: the Profile switch means "I don't dictate".
+            if (voiceInputEnabled) {
+                ComposerButton(
+                    icon = AppIcons.Mic,
+                    contentDescription = stringResource(R.string.cd_speak_question),
+                    onClick = onVoice,
+                )
+            }
             ComposerButton(
                 icon = AppIcons.SendUp,
                 contentDescription = stringResource(R.string.cd_send_question),
@@ -601,6 +646,12 @@ private fun ChatScreenPreview() {
             onFilePicked = { _, _ -> },
             onAttachmentRemoved = {},
             onNoCameraApp = {},
+            onVoiceStarted = {},
+            onVoiceToggled = {},
+            onVoiceAccepted = {},
+            onVoiceCancelled = {},
+            onVoicePermissionDenied = {},
+            voiceInputEnabled = true,
         )
     }
 }
@@ -620,6 +671,12 @@ private fun ChatEmptyPreview() {
             onFilePicked = { _, _ -> },
             onAttachmentRemoved = {},
             onNoCameraApp = {},
+            onVoiceStarted = {},
+            onVoiceToggled = {},
+            onVoiceAccepted = {},
+            onVoiceCancelled = {},
+            onVoicePermissionDenied = {},
+            voiceInputEnabled = true,
         )
     }
 }
@@ -639,7 +696,12 @@ private fun ChatScanSheetPreview() {
 private fun ChatVoicePreview() {
     AITutorTheme {
         Box(modifier = Modifier.fillMaxSize()) {
-            VoiceInputPanel(visible = true, onDismiss = {}, onAccept = {})
+            VoiceInputPanel(
+                state = VoiceUiState(listening = true, transcript = "Explain how photosynthesis", partial = "makes glucose", level = 0.7f),
+                onDismiss = {},
+                onAccept = {},
+                onToggleListening = {},
+            )
         }
     }
 }

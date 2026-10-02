@@ -41,6 +41,7 @@ object AppViewModelFactory {
                 chats = container().chats,
                 preferences = container().preferences,
                 attachments = container().attachments,
+                voice = container().voice,
             )
         }
     }

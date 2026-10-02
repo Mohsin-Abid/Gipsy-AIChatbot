@@ -332,12 +332,12 @@ private fun AskBar(modifier: Modifier = Modifier) {
             color = colors.textTertiary,
             modifier = Modifier.weight(1f),
         )
-        CircleAction(
-            icon = AppIcons.Mic,
-            contentDescription = stringResource(R.string.cd_ask_voice),
-            background = colors.accentTint,
-            tint = colors.accent,
-        )
+//        CircleAction(
+//            icon = AppIcons.Mic,
+//            contentDescription = stringResource(R.string.cd_ask_voice),
+//            background = colors.accentTint,
+//            tint = colors.accent,
+//        )
         CircleAction(
             icon = AppIcons.SendUp,
             contentDescription = stringResource(R.string.cd_send_question),
