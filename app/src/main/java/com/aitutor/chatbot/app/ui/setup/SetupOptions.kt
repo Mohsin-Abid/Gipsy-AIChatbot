@@ -19,11 +19,6 @@ import androidx.compose.runtime.getValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
-import androidx.compose.ui.draw.drawBehind
-import androidx.compose.ui.geometry.CornerRadius
-import androidx.compose.ui.graphics.Color
-import androidx.compose.ui.graphics.PathEffect
-import androidx.compose.ui.graphics.drawscope.Stroke
 import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.text.font.FontWeight
@@ -169,47 +164,4 @@ fun OptionChip(
             maxLines = 1,
         )
     }
-}
-
-/** The dashed "add your own" affordance, which reads as an invitation rather than an option. */
-@Composable
-fun DashedChip(label: String, onClick: () -> Unit, modifier: Modifier = Modifier) {
-    val colors = MaterialTheme.appColors
-    Row(
-        modifier = modifier
-            .height(44.dp)
-            .clip(AppShapes.Pill)
-            .dashedBorder(colors.accentRing)
-            .clickable(onClick = onClick)
-            .padding(start = Dimens.spaceMd, end = 16.dp),
-        verticalAlignment = Alignment.CenterVertically,
-        horizontalArrangement = Arrangement.spacedBy(Dimens.spaceSm),
-    ) {
-        Icon(
-            imageVector = AppIcons.Plus,
-            contentDescription = null,
-            tint = colors.accentText,
-            modifier = Modifier.size(17.dp),
-        )
-        Text(
-            text = label,
-            style = MaterialTheme.typography.bodyMedium.copy(
-                fontSize = 14.5.sp,
-                fontWeight = FontWeight.SemiBold,
-            ),
-            color = colors.accentText,
-        )
-    }
-}
-
-/** A dashed outline drawn directly, since Compose's `border` only does solid strokes. */
-private fun Modifier.dashedBorder(color: Color): Modifier = drawBehind {
-    drawRoundRect(
-        color = color,
-        style = Stroke(
-            width = 1.5.dp.toPx(),
-            pathEffect = PathEffect.dashPathEffect(floatArrayOf(6.dp.toPx(), 5.dp.toPx())),
-        ),
-        cornerRadius = CornerRadius(size.height / 2f),
-    )
 }

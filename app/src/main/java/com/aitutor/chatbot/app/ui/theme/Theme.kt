@@ -41,6 +41,12 @@ data class AppColors(
     /** The very faint accent wash some screens use instead of flat white. */
     val pageTint: Color,
     val fieldBorder: Color,
+    /**
+     * The resting outline of a text field. [fieldBorder] is a hairline for cards sitting on a card-coloured
+     * page, and on a white field it is close to invisible in the light theme — a field has to read as
+     * somewhere to type, which a card edge does not.
+     */
+    val inputBorder: Color,
     val radioOff: Color,
     /** The off state of a switch track — heavier than [radioOff], which outlines an empty circle. */
     val switchTrackOff: Color,
@@ -77,6 +83,7 @@ private val LightAppColors = AppColors(
     cardBorder = LightCardBorder,
     pageTint = LightPageTint,
     fieldBorder = LightFieldBorder,
+    inputBorder = LightAccentRing,
     radioOff = LightRadioOff,
     switchTrackOff = LightSwitchTrackOff,
     danger = LightDanger,
@@ -110,6 +117,7 @@ private val DarkAppColors = AppColors(
     cardBorder = DarkCardBorder,
     pageTint = DarkPageTint,
     fieldBorder = DarkFieldBorder,
+    inputBorder = DarkFieldBorder,
     radioOff = DarkRadioOff,
     switchTrackOff = DarkSwitchTrackOff,
     danger = DarkDanger,

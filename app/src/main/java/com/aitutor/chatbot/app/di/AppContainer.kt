@@ -7,6 +7,7 @@ import com.aitutor.chatbot.app.data.attachment.AttachmentStore
 import com.aitutor.chatbot.app.data.local.AppDatabase
 import com.aitutor.chatbot.app.data.prefs.UserPreferencesRepository
 import com.aitutor.chatbot.app.data.repository.ChatRepository
+import com.aitutor.chatbot.app.data.voice.Speaker
 import com.aitutor.chatbot.app.data.voice.VoiceRecognizer
 
 /**
@@ -24,6 +25,12 @@ interface AppContainer {
     val chats: ChatRepository
     val attachments: AttachmentStore
     val voice: VoiceRecognizer
+
+    /**
+     * Shared rather than per-screen: starting a text-to-speech engine takes about a second, and
+     * paying that each time a chat opens would be audible as a delay before the first word.
+     */
+    val speaker: Speaker
 }
 
 class DefaultAppContainer(context: Context) : AppContainer {
@@ -45,6 +52,8 @@ class DefaultAppContainer(context: Context) : AppContainer {
     override val attachments: AttachmentStore by lazy { AttachmentStore(appContext) }
 
     override val voice: VoiceRecognizer by lazy { VoiceRecognizer(appContext) }
+
+    override val speaker: Speaker by lazy { Speaker(appContext) }
 
     override val chats: ChatRepository by lazy {
         ChatRepository(

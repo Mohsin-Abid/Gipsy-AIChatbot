@@ -74,16 +74,23 @@ class VoiceRecognizerTest {
     }
 
     @Test
-    fun `a language failure blames the engine, not the speech`() {
-        // The Pixel case: an on-device recogniser that reports itself available, has never
-        // downloaded its English pack, and refuses the first request. Another engine on the same
-        // phone answers fine — so this must be distinguishable from "you said nothing".
-        assertTrue(VoiceError.isEngineFailure(VoiceError.LanguageUnavailable))
-        assertTrue(VoiceError.isEngineFailure(VoiceError.Unavailable))
+    fun `an engine's own failure is distinguishable from the speech's`() {
+        // Three ways an engine refuses a request that the other engine on the same phone would
+        // have answered, which is the whole reason the fallback exists.
 
+        // A Pixel's on-device recogniser whose English pack was never downloaded.
+        assertTrue(VoiceError.isEngineFailure(VoiceError.LanguageUnavailable))
+        // A stub recogniser on an OEM ROM that advertises itself and then fails.
+        assertTrue(VoiceError.isEngineFailure(VoiceError.Unavailable))
+        // The system recogniser with no connection — it is Google's and works on their servers,
+        // while the on-device engine needs no network at all. Without this, dictation is simply
+        // broken offline on a phone that is perfectly capable of it.
+        assertTrue(VoiceError.isEngineFailure(VoiceError.Network))
+
+        // These are about the speech or the permission. Another engine would fail the same way.
         assertFalse(VoiceError.isEngineFailure(VoiceError.NoSpeechHeard))
+        assertFalse(VoiceError.isEngineFailure(VoiceError.SilenceTimeout))
         assertFalse(VoiceError.isEngineFailure(VoiceError.PermissionDenied))
-        assertFalse(VoiceError.isEngineFailure(VoiceError.Network))
         assertFalse(VoiceError.isEngineFailure(VoiceError.Busy))
     }
 

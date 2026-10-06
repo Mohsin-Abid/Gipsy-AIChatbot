@@ -189,6 +189,11 @@ object AppIcons {
             width = 1.9f,
         )
     }
+    /** Replaces [SpeakerWave] while an answer is being read, so one button both starts and stops. */
+    val StopSquare: ImageVector by lazy {
+        filled("StopSquare", "M8 6h8a2 2 0 0 1 2 2v8a2 2 0 0 1-2 2H8a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2z")
+    }
+
     val SpeakerWave: ImageVector by lazy {
         stroked(
             "SpeakerWave",

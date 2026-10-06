@@ -42,6 +42,7 @@ object AppViewModelFactory {
                 preferences = container().preferences,
                 attachments = container().attachments,
                 voice = container().voice,
+                speaker = container().speaker,
             )
         }
     }

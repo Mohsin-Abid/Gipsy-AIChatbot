@@ -243,7 +243,9 @@ private fun BulletLine(term: String, text: String) {
 @Composable
 internal fun AnswerActions(
     onMore: () -> Unit,
+    onReadAloud: () -> Unit,
     modifier: Modifier = Modifier,
+    isSpeaking: Boolean = false,
 ) {
     val colors = MaterialTheme.appColors
     Row(
@@ -252,7 +254,15 @@ internal fun AnswerActions(
         horizontalArrangement = Arrangement.spacedBy(2.dp),
     ) {
         AnswerAction(AppIcons.Copy, stringResource(R.string.chat_action_copy))
-        AnswerAction(AppIcons.SpeakerWave, stringResource(R.string.chat_action_read_aloud))
+        // One button for both states: reading, and stopping what is being read.
+        AnswerAction(
+            icon = if (isSpeaking) AppIcons.StopSquare else AppIcons.SpeakerWave,
+            contentDescription = stringResource(
+                if (isSpeaking) R.string.chat_action_stop_reading else R.string.chat_action_read_aloud
+            ),
+            onClick = onReadAloud,
+            tint = if (isSpeaking) colors.accent else colors.textTertiary,
+        )
         AnswerAction(AppIcons.ThumbUp, stringResource(R.string.chat_action_helpful))
         AnswerAction(AppIcons.ThumbDown, stringResource(R.string.chat_action_not_helpful))
         AnswerAction(AppIcons.Refresh, stringResource(R.string.chat_action_regenerate))
@@ -286,19 +296,26 @@ internal fun AnswerActions(
 }
 
 @Composable
-private fun AnswerAction(icon: ImageVector, contentDescription: String) {
+private fun AnswerAction(
+    icon: ImageVector,
+    contentDescription: String,
+    onClick: (() -> Unit)? = null,
+    tint: Color? = null,
+) {
     val colors = MaterialTheme.appColors
     Box(
         modifier = Modifier
             .size(34.dp)
             .clip(AppShapes.Pill)
-            .clickable { },
+            // Copy, the ratings and regenerate are still unwired. They take no click rather than an
+            // empty one, so they do not report themselves to accessibility as working buttons.
+            .then(if (onClick != null) Modifier.clickable(onClick = onClick) else Modifier),
         contentAlignment = Alignment.Center,
     ) {
         Icon(
             imageVector = icon,
             contentDescription = contentDescription,
-            tint = colors.textTertiary,
+            tint = tint ?: colors.textTertiary,
             modifier = Modifier.size(17.dp),
         )
     }

@@ -110,10 +110,10 @@
     <string name="grade_10">Grade 10</string>
     <string name="grade_11">Grade 11</string>
     <string name="grade_12">Grade 12</string>
+    <string name="other">Other</string>
 
     <string name="setup_subjects_title">Which subjects do you need help with?</string>
     <string name="setup_subjects_subtitle">Pick as many as you like. We’ll suggest tools and examples for them.</string>
-    <string name="setup_subjects_add_other">Add other</string>
     <string name="setup_subjects_selected">%1$d selected</string>
     <string name="setup_subjects_change_later">you can change these later</string>
     <string name="subject_math">Math</string>
@@ -127,6 +127,7 @@
     <string name="subject_economics">Economics</string>
     <string name="subject_languages">Languages</string>
     <string name="subject_art">Art &amp; Design</string>
+    <string name="subject_other">Other</string>
 
     <string name="setup_goals_title">What’s your main goal?</string>
     <string name="setup_goals_subtitle">Choose up to 2. We’ll shape your daily plan around them.</string>
@@ -389,6 +390,10 @@
     <string name="voice_error_busy">Something else is using the microphone. Try again in a moment.</string>
     <string name="voice_error_network">Speech recognition needs a connection right now.</string>
     <string name="voice_error_language">This device can\'t recognise English speech.</string>
+    <string name="speech_error_unavailable">This device has no text-to-speech, so answers can\'t be read aloud.</string>
+    <string name="speech_error_language">No English voice is installed. Add one in your phone\'s text-to-speech settings.</string>
+    <string name="speech_error_failed">Reading aloud stopped unexpectedly. Try again.</string>
+    <string name="chat_action_stop_reading">Stop reading</string>
     <string name="voice_error_unavailable">This device has no speech recognition, so dictation isn\'t available.</string>
     <string name="cd_cancel_voice">Cancel voice input</string>
     <string name="cd_accept_voice">Add text to message</string>

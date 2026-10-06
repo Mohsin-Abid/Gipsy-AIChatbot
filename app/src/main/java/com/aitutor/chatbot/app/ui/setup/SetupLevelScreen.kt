@@ -87,13 +87,13 @@ fun SetupLevelScreen(
             }
         }
 
-        Column(
-            modifier = Modifier.padding(top = 22.dp),
-            verticalArrangement = Arrangement.spacedBy(10.dp),
-        ) {
-            FieldLabel(text = stringResource(R.string.setup_board_label), optional = true)
-            BoardSelector()
-        }
+//        Column(
+//            modifier = Modifier.padding(top = 22.dp),
+//            verticalArrangement = Arrangement.spacedBy(10.dp),
+//        ) {
+//            FieldLabel(text = stringResource(R.string.setup_board_label), optional = true)
+//            BoardSelector()
+//        }
     }
 }
 

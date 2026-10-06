@@ -12,12 +12,15 @@ import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
+import androidx.compose.foundation.layout.navigationBarsPadding
 import androidx.compose.foundation.layout.statusBarsPadding
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.text.BasicTextField
+import androidx.compose.foundation.text.KeyboardActions
+import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
@@ -32,7 +35,9 @@ import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.SolidColor
+import androidx.compose.ui.platform.LocalFocusManager
 import androidx.compose.ui.res.stringResource
+import androidx.compose.ui.text.input.ImeAction
 import androidx.compose.ui.text.SpanStyle
 import androidx.compose.ui.text.buildAnnotatedString
 import androidx.compose.ui.text.font.FontWeight
@@ -50,7 +55,6 @@ import com.aitutor.chatbot.app.ui.theme.AppShapes
 import com.aitutor.chatbot.app.ui.theme.Dimens
 import com.aitutor.chatbot.app.ui.theme.ScreenPreviews
 import com.aitutor.chatbot.app.ui.theme.SystemBarIcons
-import com.aitutor.chatbot.app.ui.theme.bottomSafePadding
 import com.aitutor.chatbot.app.ui.theme.appColors
 
 private val CardShape = androidx.compose.foundation.shape.RoundedCornerShape(18.dp)
@@ -98,7 +102,8 @@ fun LanguageScreen(
 
             LazyColumn(
                 modifier = Modifier.weight(1f),
-                // Clears the floating bottom bar, which itself clears the navigation bar.
+                // Clears the floating bottom bar. The keyboard is counted too, though the bar no longer
+                // rides above it: the last language still has to be scrollable up out of its way.
                 contentPadding = PaddingValues(
                     start = 20.dp,
                     end = 20.dp,
@@ -225,6 +230,7 @@ private fun SearchField(
     modifier: Modifier = Modifier,
 ) {
     val colors = MaterialTheme.appColors
+    val focusManager = LocalFocusManager.current
     Row(
         modifier = modifier
             .fillMaxWidth()
@@ -254,6 +260,10 @@ private fun SearchField(
                 value = query,
                 onValueChange = onQueryChange,
                 singleLine = true,
+                // The keyboard covers the Continue button while it is open, so this is how it is put
+                // away: Done clears focus, which closes the keyboard and uncovers the button.
+                keyboardOptions = KeyboardOptions(imeAction = ImeAction.Done),
+                keyboardActions = KeyboardActions(onDone = { focusManager.clearFocus() }),
                 textStyle = MaterialTheme.typography.bodyLarge.copy(color = colors.textPrimary),
                 cursorBrush = SolidColor(colors.accent),
                 modifier = Modifier.fillMaxWidth(),
@@ -359,7 +369,10 @@ private fun BottomBar(
                     0.42f to colors.pageTint,
                 )
             )
-            .bottomSafePadding()
+            // Navigation bar only. `bottomSafePadding()` also counts the keyboard, which is what
+            // lifted this bar up over the list while someone was searching. Here the keyboard simply
+            // covers it, and the Done key puts the keyboard away.
+            .navigationBarsPadding()
             .padding(start = 20.dp, end = 20.dp, top = 44.dp, bottom = 28.dp),
         verticalArrangement = Arrangement.spacedBy(Dimens.spaceMd),
     ) {

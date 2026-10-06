@@ -170,11 +170,11 @@ private fun OnboardingPage(
                     verticalArrangement = Arrangement.spacedBy(Dimens.spaceMd),
                 ) {
                     PrimaryCta(text = stringResource(R.string.onboarding_3_cta), onClick = onNext)
-                    Text(
-                        text = stringResource(R.string.onboarding_3_no_signup),
-                        style = MaterialTheme.typography.labelMedium,
-                        color = colors.textTertiary,
-                    )
+//                    Text(
+//                        text = stringResource(R.string.onboarding_3_no_signup),
+//                        style = MaterialTheme.typography.labelMedium,
+//                        color = colors.textTertiary,
+//                    )
                 }
             } else {
                 Row(

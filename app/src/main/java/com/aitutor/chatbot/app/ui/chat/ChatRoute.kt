@@ -34,6 +34,7 @@ fun ChatRoute(
         onSend = viewModel::send,
         onSelectText = onSelectText,
         onClearMessages = viewModel::clearMessages,
+        onReadAloud = viewModel::onReadAloud,
         onErrorShown = viewModel::onErrorShown,
         onFilePicked = viewModel::onFilePicked,
         onAttachmentRemoved = viewModel::onAttachmentRemoved,

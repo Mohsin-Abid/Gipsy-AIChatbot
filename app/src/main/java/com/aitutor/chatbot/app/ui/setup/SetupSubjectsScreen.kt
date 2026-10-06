@@ -73,7 +73,6 @@ fun SetupSubjectsScreen(
                     onClick = { onToggle(subject) },
                 )
             }
-            DashedChip(label = stringResource(R.string.setup_subjects_add_other), onClick = {})
         }
     }
 }

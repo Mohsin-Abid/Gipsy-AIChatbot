@@ -42,6 +42,15 @@ class VoiceRecognizer(context: Context) {
 
     private val appContext = context.applicationContext
 
+    /**
+     * Whether the offline model has ever been asked for, remembered across launches.
+     *
+     * In-process would not be enough: `triggerModelDownload` puts a system download dialog in front
+     * of the student, and a flag that resets with the process puts it there on every single launch.
+     * Asking once, ever, is the most this is entitled to do.
+     */
+    private val asked = appContext.getSharedPreferences(PREFS, Context.MODE_PRIVATE)
+
     /** Which of the device's recognisers is being used. Most phones offer both. */
     private enum class Engine { System, OnDevice }
 
@@ -73,6 +82,10 @@ class VoiceRecognizer(context: Context) {
         var recognizer: SpeechRecognizer? = null
         var engine = preferredEngine()
         var switched = false
+        // Why the first engine gave up. Kept because it is usually the more useful thing to tell
+        // someone: if the phone is offline and has no local model, "you need a connection" is the
+        // problem they can actually do something about, not "the fallback also failed".
+        var firstFailure: VoiceError? = null
 
         if (engine == null) {
             trySend(VoiceEvent.Failed(VoiceError.Unavailable))
@@ -126,12 +139,13 @@ class VoiceRecognizer(context: Context) {
                     !switched && other != null && VoiceError.isEngineFailure(reason) -> {
                         if (engine == Engine.OnDevice) requestOnDeviceModel(recognizer)
                         switched = true
+                        firstFailure = reason
                         engine = other
                         startWith(other)
                     }
 
                     else -> {
-                        trySend(VoiceEvent.Failed(reason))
+                        trySend(VoiceEvent.Failed(firstFailure ?: reason))
                         close()
                     }
                 }
@@ -195,8 +209,30 @@ class VoiceRecognizer(context: Context) {
      */
     private fun requestOnDeviceModel(recognizer: SpeechRecognizer?) {
         if (Build.VERSION.SDK_INT < Build.VERSION_CODES.TIRAMISU || recognizer == null) return
+        if (asked.getBoolean(KEY_MODEL_REQUESTED, false)) return
+        asked.edit().putBoolean(KEY_MODEL_REQUESTED, true).apply()
         runCatching { recognizer.triggerModelDownload(recognizerIntent()) }
             .onFailure { Log.w(TAG, "Could not request the on-device model", it) }
+    }
+
+    /**
+     * Asks the platform, once per process, to fetch the on-device English model.
+     *
+     * Called when the voice panel opens rather than after a failure, because the model is what makes
+     * dictation work with no connection and it is useless to start downloading it at the moment
+     * someone has no connection. Fire and forget: this dictation uses whatever is available now.
+     */
+    @MainThread
+    fun warmUpOfflineModel() {
+        if (Build.VERSION.SDK_INT < Build.VERSION_CODES.TIRAMISU) return
+        if (asked.getBoolean(KEY_MODEL_REQUESTED, false)) return
+        if (!onDeviceAvailable()) return
+        asked.edit().putBoolean(KEY_MODEL_REQUESTED, true).apply()
+        val recognizer = create(Engine.OnDevice) ?: return
+        requestOnDeviceModel(recognizer)
+        // Nothing listens to it, so it is destroyed straight away — the download, once asked for,
+        // is the platform's to finish.
+        runCatching { recognizer.destroy() }
     }
 
     private fun recognizerIntent() = Intent(RecognizerIntent.ACTION_RECOGNIZE_SPEECH).apply {
@@ -214,6 +250,8 @@ class VoiceRecognizer(context: Context) {
 
     companion object {
         private const val TAG = "VoiceRecognizer"
+        private const val PREFS = "voice"
+        private const val KEY_MODEL_REQUESTED = "offline_model_requested"
 
         /** Dictation is English regardless of the interface language. */
         const val LANGUAGE = "en-US"

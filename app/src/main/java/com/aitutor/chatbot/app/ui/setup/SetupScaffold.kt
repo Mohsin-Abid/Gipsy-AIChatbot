@@ -11,6 +11,7 @@ import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.statusBarsPadding
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
+import androidx.compose.foundation.layout.navigationBarsPadding
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.rememberScrollState
@@ -38,7 +39,6 @@ import com.aitutor.chatbot.app.ui.theme.AppShapes
 import com.aitutor.chatbot.app.ui.theme.AppInsets
 import com.aitutor.chatbot.app.ui.theme.Dimens
 import com.aitutor.chatbot.app.ui.theme.SystemBarIcons
-import com.aitutor.chatbot.app.ui.theme.bottomSafePadding
 import com.aitutor.chatbot.app.ui.theme.appColors
 
 const val SETUP_STEPS = 4
@@ -51,6 +51,10 @@ private val SidePadding = 20.dp
  *
  * The bar sits over the content behind a gradient fade rather than a divider, so a long list looks
  * like it continues underneath instead of being cut off.
+ *
+ * It is **fixed to the bottom of the screen** and does not follow the keyboard. Lifting it above the
+ * keyboard — as the chat composer does — put a button over the field being typed into and the
+ * preview beneath it; here the keyboard simply covers it, and the Done key puts the keyboard away.
  */
 @Composable
 fun SetupScaffold(
@@ -213,7 +217,9 @@ private fun SetupActionBar(
                     0.40f to colors.pageTint,
                 )
             )
-            .bottomSafePadding()
+            // Navigation bar only. `bottomSafePadding()` also counts the keyboard, which is exactly what
+            // lifts a bar off the bottom edge.
+            .navigationBarsPadding()
             .padding(start = SidePadding, end = SidePadding, top = 40.dp, bottom = 28.dp),
         verticalArrangement = Arrangement.spacedBy(Dimens.spaceMd),
     ) {

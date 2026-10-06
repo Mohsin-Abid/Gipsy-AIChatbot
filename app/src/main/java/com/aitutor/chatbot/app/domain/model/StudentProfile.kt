@@ -25,6 +25,7 @@ enum class Grade(@param:StringRes val labelRes: Int) {
     Grade10(R.string.grade_10),
     Grade11(R.string.grade_11),
     Grade12(R.string.grade_12),
+    Other(R.string.other)
 }
 
 enum class Subject(@param:StringRes val labelRes: Int, val icon: ImageVector) {
@@ -39,6 +40,12 @@ enum class Subject(@param:StringRes val labelRes: Int, val icon: ImageVector) {
     Economics(R.string.subject_economics, AppIcons.Economics),
     Languages(R.string.subject_languages, AppIcons.Languages),
     Art(R.string.subject_art, AppIcons.Art),
+
+    /**
+     * Anything not listed. Last on purpose: subjects are stored by name so position does not
+     * matter to saved data, but the chip row reads in this order and "Other" belongs at its end.
+     */
+    Other(R.string.subject_other, AppIcons.DotsHorizontal),
 }
 
 enum class StudyGoal(@param:StringRes val labelRes: Int, val icon: ImageVector) {

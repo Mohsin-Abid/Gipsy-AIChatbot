@@ -66,11 +66,16 @@ enum class VoiceError {
          * True where the *engine* is at fault rather than the speech, so another engine on the same
          * device may well succeed.
          *
-         * The case this exists for: a Pixel reports an on-device recogniser, but its English pack
-         * has never been downloaded, so the first request comes back [LanguageUnavailable] — while
-         * the ordinary system recogniser beside it would have answered immediately.
+         * Three cases, and they pull in opposite directions, which is the whole point of trying
+         * both engines rather than picking one:
+         *
+         * - [LanguageUnavailable] — a Pixel advertises an on-device recogniser whose English pack
+         *   was never downloaded, while the system recogniser beside it would answer immediately.
+         * - [Network] — the reverse. The system recogniser is Google's and does its work on
+         *   Google's servers, so with no connection it fails where the on-device engine would not.
+         * - [Unavailable] — a stub recogniser on an OEM ROM that advertises itself and then refuses.
          */
         fun isEngineFailure(error: VoiceError): Boolean =
-            error == LanguageUnavailable || error == Unavailable
+            error == LanguageUnavailable || error == Unavailable || error == Network
     }
 }

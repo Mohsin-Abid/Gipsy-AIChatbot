@@ -10,6 +10,8 @@ import com.aitutor.chatbot.app.data.api.TutorApiNotConfiguredException
 import com.aitutor.chatbot.app.data.attachment.AttachmentError
 import com.aitutor.chatbot.app.data.attachment.AttachmentException
 import com.aitutor.chatbot.app.data.attachment.AttachmentStore
+import com.aitutor.chatbot.app.data.voice.SpeechError
+import com.aitutor.chatbot.app.data.voice.Speaker
 import com.aitutor.chatbot.app.data.voice.VoiceError
 import com.aitutor.chatbot.app.data.voice.VoiceEvent
 import com.aitutor.chatbot.app.data.voice.VoiceRecognizer
@@ -42,6 +44,8 @@ data class ChatUiState(
     val attaching: Boolean = false,
     /** Null while the voice panel is closed. */
     val voice: VoiceUiState? = null,
+    /** The answer being read aloud, or null when nothing is. */
+    val speakingMessageId: Long? = null,
     /** Set when a request failed; cleared as soon as it has been shown and dismissed. */
     @param:StringRes val errorRes: Int? = null,
 ) {
@@ -96,6 +100,7 @@ class ChatViewModel(
     private val preferences: UserPreferencesRepository,
     private val attachments: AttachmentStore,
     private val voice: VoiceRecognizer,
+    private val speaker: Speaker,
 ) : ViewModel() {
 
     private val tool: StudyTool = savedStateHandle.get<String>(Route.Chat.TOOL_KEY)
@@ -110,6 +115,25 @@ class ChatViewModel(
 
     init {
         chatId?.let(::observe)
+        observeSpeaker()
+    }
+
+    /**
+     * Mirrors the shared speaker into this screen's state.
+     *
+     * The speaker outlives the screen, so what it is reading is read from it rather than tracked
+     * here — otherwise backing out mid-sentence and returning would show a stopped button over
+     * audio that is still playing.
+     */
+    private fun observeSpeaker() = viewModelScope.launch {
+        speaker.state.collect { speaking ->
+            _state.update { current ->
+                current.copy(
+                    speakingMessageId = speaking.messageId,
+                    errorRes = speaking.error?.toMessageRes() ?: current.errorRes,
+                )
+            }
+        }
     }
 
     private fun observe(id: Long) = viewModelScope.launch {
@@ -169,6 +193,9 @@ class ChatViewModel(
             _state.update { it.copy(voice = VoiceUiState(errorRes = R.string.voice_error_unavailable)) }
             return
         }
+        // Asked for here rather than after a failure: the local model is what makes dictation work
+        // with no connection, and the moment someone is offline is too late to start downloading it.
+        voice.warmUpOfflineModel()
         _state.update { it.copy(voice = VoiceUiState(listening = true)) }
         startListening()
     }
@@ -242,6 +269,23 @@ class ChatViewModel(
         }
     }
 
+    // ---- Reading aloud ----
+
+    /**
+     * The speaker button under an answer. Pressing the one already playing stops it.
+     *
+     * The text is rebuilt from the answer's blocks rather than stored, so it always matches what is
+     * on screen.
+     */
+    fun onReadAloud(messageId: Long) {
+        val blocks = _state.value.storedMessages
+            .filterIsInstance<ChatMessage.Assistant>()
+            .firstOrNull { it.id == messageId }
+            ?.blocks
+            ?: return
+        speaker.toggle(messageId, Speaker.speakableText(blocks))
+    }
+
     fun onErrorShown() = _state.update { it.copy(errorRes = null) }
 
     /**
@@ -295,6 +339,15 @@ class ChatViewModel(
         val id = chatId ?: return
         viewModelScope.launch { chats.delete(id) }
     }
+
+    /**
+     * Stops the audio, but does not shut the engine down — it belongs to the application and the
+     * next chat will want it already started. Leaving an answer reading after the screen is gone
+     * would be a voice with nothing on screen to explain it.
+     */
+    override fun onCleared() {
+        if (_state.value.speakingMessageId != null) speaker.stop()
+    }
 }
 
 /** Folds one recogniser event into the panel's state. */
@@ -315,6 +368,13 @@ private fun VoiceUiState.reduce(event: VoiceEvent): VoiceUiState = when (event) 
 }
 
 @StringRes
+private fun SpeechError.toMessageRes(): Int = when (this) {
+    SpeechError.Unavailable -> R.string.speech_error_unavailable
+    SpeechError.LanguageMissing -> R.string.speech_error_language
+    SpeechError.Failed -> R.string.speech_error_failed
+}
+
+@StringRes
 private fun VoiceError.toMessageRes(): Int = when (this) {
     VoiceError.NoSpeechHeard, VoiceError.SilenceTimeout -> R.string.voice_error_no_speech
     VoiceError.PermissionDenied -> R.string.voice_error_permission
@@ -328,8 +388,12 @@ private fun VoiceError.toMessageRes(): Int = when (this) {
  * A chat's title is its opening question, shortened. Naming a conversation after what was asked is
  * what makes the history list readable without opening anything.
  */
-private fun String.toTitle(): String =
-    if (length <= TITLE_MAX_LENGTH) this else take(TITLE_MAX_LENGTH).trimEnd() + "…"
+private fun String.toTitle(): String {
+    // A question can now run over several lines, and a history row is a single one — cut at the
+    // first newline it would read "Solve this:" and lose the rest of what was asked.
+    val oneLine = replace(Regex("\\s+"), " ").trim()
+    return if (oneLine.length <= TITLE_MAX_LENGTH) oneLine else oneLine.take(TITLE_MAX_LENGTH).trimEnd() + "…"
+}
 
 private const val TITLE_MAX_LENGTH = 60
 

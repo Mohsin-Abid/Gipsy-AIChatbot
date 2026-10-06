@@ -8,6 +8,7 @@ import androidx.core.app.ActivityCompat
 import androidx.core.content.ContextCompat
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
+import androidx.compose.foundation.gestures.scrollBy
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
@@ -17,6 +18,7 @@ import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
+import androidx.compose.foundation.layout.heightIn
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.statusBarsPadding
@@ -34,6 +36,7 @@ import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
+import androidx.compose.runtime.snapshotFlow
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
@@ -42,6 +45,7 @@ import androidx.compose.ui.graphics.SolidColor
 import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.stringResource
+import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
@@ -66,6 +70,25 @@ import com.aitutor.chatbot.app.ui.theme.bottomSafePadding
 import com.aitutor.chatbot.app.ui.theme.appColors
 
 private val ComposerShape = RoundedCornerShape(28.dp)
+
+/**
+ * How many lines the field grows to before it scrolls instead.
+ *
+ * Five keeps a long question fully readable while leaving the conversation most of the screen — a
+ * composer that could grow without limit would push the thread off the display on a small phone.
+ */
+private const val ComposerMaxLines = 5
+
+/** The composer at rest: one line of text between two 6dp insets, around 44dp buttons. */
+private val ComposerMinHeight = 56.dp
+
+/**
+ * Space above and below the text, so a single line sits centred against the 44dp buttons.
+ *
+ * It is (44dp button - 22sp line) / 2. Holding it constant rather than centring the field is what
+ * stops the first line jumping up as the second one appears.
+ */
+private val ComposerTextInset = 11.dp
 private val HeaderIconShape = RoundedCornerShape(12.dp)
 
 /** Which overlay, if any, is open over the thread. Only one can be at a time. */
@@ -85,6 +108,7 @@ fun ChatScreen(
     onSend: () -> Unit,
     onSelectText: () -> Unit,
     onClearMessages: () -> Unit,
+    onReadAloud: (Long) -> Unit,
     onErrorShown: () -> Unit,
     onFilePicked: (Uri, ScanSource) -> Unit,
     onAttachmentRemoved: () -> Unit,
@@ -127,6 +151,30 @@ fun ChatScreen(
         if (state.messages.isNotEmpty()) listState.scrollToItem(state.messages.lastIndex)
     }
 
+    // Keeps the bottom of the thread where it was when the list is resized beneath it.
+    //
+    // The composer grows as a question gets longer, and the keyboard opening and closing does the
+    // same, and both take room from the list. Left alone, the newest message slides under the
+    // composer. The scroll is the exact amount the viewport changed by, so the bottom edge stays put
+    // whatever the heights of the items are — and a student who has scrolled up to reread something
+    // is left exactly where they are.
+    LaunchedEffect(listState) {
+        var viewport = 0
+        var pinned = true
+        snapshotFlow { listState.layoutInfo.viewportSize.height to !listState.canScrollForward }
+            .collect { (height, atEnd) ->
+                if (height == viewport) {
+                    // A real scroll rather than a resize: this is the student's own position.
+                    pinned = atEnd
+                } else {
+                    if (pinned && viewport != 0 && height != 0) {
+                        listState.scrollBy((viewport - height).toFloat())
+                    }
+                    viewport = height
+                }
+            }
+    }
+
     Box(
         modifier = modifier
             .fillMaxSize()
@@ -158,6 +206,8 @@ fun ChatScreen(
                         MessageRow(
                             message = message,
                             onMore = { overlay = ChatOverlay.AnswerOptions },
+                            onReadAloud = onReadAloud,
+                            speakingMessageId = state.speakingMessageId,
                             modifier = Modifier.fillMaxWidth(),
                         )
                     }
@@ -226,7 +276,9 @@ fun ChatScreen(
 private fun MessageRow(
     message: ChatMessage,
     onMore: () -> Unit,
+    onReadAloud: (Long) -> Unit,
     modifier: Modifier = Modifier,
+    speakingMessageId: Long? = null,
 ) {
     when (message) {
         is ChatMessage.DayMarker -> Box(modifier = modifier, contentAlignment = Alignment.Center) {
@@ -254,7 +306,13 @@ private fun MessageRow(
                 verticalArrangement = Arrangement.spacedBy(Dimens.spaceXs),
             ) {
                 AssistantBubble(blocks = message.blocks)
-                if (message.showActions) AnswerActions(onMore = onMore)
+                if (message.showActions) {
+                    AnswerActions(
+                        onMore = onMore,
+                        onReadAloud = { onReadAloud(message.id) },
+                        isSpeaking = speakingMessageId == message.id,
+                    )
+                }
             }
         }
 
@@ -418,12 +476,16 @@ private fun Composer(
         Row(
             modifier = Modifier
                 .fillMaxWidth()
-                .height(56.dp)
+                // Grows with the text. The floor is the old fixed height, so an empty composer is
+                // exactly as it was drawn.
+                .heightIn(min = ComposerMinHeight)
                 .clip(ComposerShape)
                 .background(colors.pageTint)
                 .border(1.dp, colors.cardBorder, ComposerShape)
-                .padding(horizontal = Dimens.spaceXs),
-            verticalAlignment = Alignment.CenterVertically,
+                .padding(Dimens.spaceXs),
+            // Buttons hold the bottom edge as the field gets taller, which is where a thumb is.
+            // Centred, they would float off beside the middle of a five-line question.
+            verticalAlignment = Alignment.Bottom,
             horizontalArrangement = Arrangement.spacedBy(Dimens.spaceXxs),
         ) {
             ComposerButton(
@@ -435,20 +497,25 @@ private fun Composer(
             Box(
                 modifier = Modifier
                     .weight(1f)
-                    .padding(start = Dimens.spaceXs),
-                contentAlignment = Alignment.CenterStart,
+                    .padding(start = Dimens.spaceXs, top = ComposerTextInset, bottom = ComposerTextInset),
+                contentAlignment = Alignment.TopStart,
             ) {
                 if (draft.isEmpty()) {
                     Text(
                         text = stringResource(R.string.chat_composer_hint),
                         style = MaterialTheme.typography.bodyLarge,
                         color = colors.textTertiary,
+                        // A longer translation must not wrap and make the empty composer two lines.
+                        maxLines = 1,
+                        overflow = TextOverflow.Ellipsis,
                     )
                 }
                 BasicTextField(
                     value = draft,
                     onValueChange = onDraftChange,
-                    singleLine = true,
+                    // Enter starts a new line, which is what writing a question wants. Past the cap
+                    // the field scrolls inside itself and keeps the cursor in view.
+                    maxLines = ComposerMaxLines,
                     textStyle = MaterialTheme.typography.bodyLarge.copy(color = colors.textPrimary),
                     cursorBrush = SolidColor(colors.accent),
                     modifier = Modifier.fillMaxWidth(),
@@ -642,6 +709,40 @@ private fun ChatScreenPreview() {
             onSend = {},
             onSelectText = {},
             onClearMessages = {},
+            onReadAloud = {},
+            onErrorShown = {},
+            onFilePicked = { _, _ -> },
+            onAttachmentRemoved = {},
+            onNoCameraApp = {},
+            onVoiceStarted = {},
+            onVoiceToggled = {},
+            onVoiceAccepted = {},
+            onVoiceCancelled = {},
+            onVoicePermissionDenied = {},
+            voiceInputEnabled = true,
+        )
+    }
+}
+
+@ScreenPreviews
+@Composable
+private fun ChatLongDraftPreview() {
+    AITutorTheme {
+        ChatScreen(
+            state = ChatUiState(
+                tool = StudyTool.AiTutor,
+                subject = "Biology",
+                storedMessages = SampleContent.conversation(),
+                // Long enough to hit the five-line cap, so the preview shows the scrolled state.
+                draft = List(8) { "Explain how photosynthesis turns light into chemical energy." }
+                    .joinToString("\n"),
+            ),
+            onBack = {},
+            onDraftChange = {},
+            onSend = {},
+            onSelectText = {},
+            onClearMessages = {},
+            onReadAloud = {},
             onErrorShown = {},
             onFilePicked = { _, _ -> },
             onAttachmentRemoved = {},
@@ -667,6 +768,7 @@ private fun ChatEmptyPreview() {
             onSend = {},
             onSelectText = {},
             onClearMessages = {},
+            onReadAloud = {},
             onErrorShown = {},
             onFilePicked = { _, _ -> },
             onAttachmentRemoved = {},
