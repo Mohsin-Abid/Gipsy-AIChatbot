@@ -62,7 +62,6 @@ val TabSidePadding = 20.dp
 val TabBottomInset = 124.dp
 
 private val HeroShape = RoundedCornerShape(bottomStart = 36.dp, bottomEnd = 36.dp)
-private val StatStripShape = RoundedCornerShape(20.dp)
 private val PanelShape = RoundedCornerShape(22.dp)
 private val ShadowTint = Color(0xFF080C28)
 
@@ -142,86 +141,6 @@ fun TabHeroTitle(
             )
         }
         action?.invoke()
-    }
-}
-
-/** A 44dp translucent circle for an action sitting on the hero. */
-@Composable
-fun HeroIconButton(
-    icon: ImageVector,
-    contentDescription: String,
-    onClick: () -> Unit,
-    modifier: Modifier = Modifier,
-) {
-    Box(
-        modifier = modifier
-            .size(44.dp)
-            .clip(AppShapes.Pill)
-            .background(OnHero.FillSoft)
-            .border(1.dp, OnHero.StrokeSoft, AppShapes.Pill)
-            .clickable(onClick = onClick),
-        contentAlignment = Alignment.Center,
-    ) {
-        Icon(
-            imageVector = icon,
-            contentDescription = contentDescription,
-            tint = Color.White,
-            modifier = Modifier.size(20.dp),
-        )
-    }
-}
-
-/** Three figures side by side on the hero, hairline-divided. History and Profile both open with it. */
-@Composable
-fun HeroStatStrip(
-    stats: List<Pair<String, String>>,
-    modifier: Modifier = Modifier,
-) {
-    val colors = MaterialTheme.appColors
-    Row(
-        modifier = modifier
-            .fillMaxWidth()
-            .clip(StatStripShape)
-            .background(OnHero.FillFaint)
-            .border(1.dp, OnHero.StrokeSoft, StatStripShape)
-            .padding(vertical = Dimens.spaceLg, horizontal = Dimens.spaceXs),
-        verticalAlignment = Alignment.CenterVertically,
-    ) {
-        stats.forEachIndexed { index, (value, label) ->
-            if (index > 0) {
-                Box(
-                    modifier = Modifier
-                        .width(1.dp)
-                        .height(44.dp)
-                        .background(OnHero.Stroke)
-                )
-            }
-            Column(
-                modifier = Modifier.weight(1f),
-                horizontalAlignment = Alignment.CenterHorizontally,
-                verticalArrangement = Arrangement.spacedBy(2.dp),
-            ) {
-                Text(
-                    text = value,
-                    style = MaterialTheme.typography.headlineSmall.copy(
-                        fontSize = 22.sp,
-                        lineHeight = 28.sp,
-                        fontWeight = FontWeight.Bold,
-                        letterSpacing = (-0.66).sp,
-                    ),
-                    color = Color.White,
-                    maxLines = 1,
-                )
-                Text(
-                    text = label,
-                    style = MaterialTheme.typography.labelMedium.copy(
-                        fontSize = 12.sp,
-                        fontWeight = FontWeight.Normal,
-                    ),
-                    color = colors.onAccentMuted,
-                )
-            }
-        }
     }
 }
 

@@ -54,7 +54,10 @@ fun MainShell(
     onToolClick: (StudyTool) -> Unit,
     onOpenChat: (HistoryEntry) -> Unit,
     onOpenLanguage: () -> Unit,
-    onEditProfile: () -> Unit,
+    onEditName: () -> Unit,
+    onEditLevel: () -> Unit,
+    onEditSubjects: () -> Unit,
+    onEditGoals: () -> Unit,
     onSeeProPlans: () -> Unit,
     modifier: Modifier = Modifier,
 ) {
@@ -86,7 +89,10 @@ fun MainShell(
                     onRemindersChange = onRemindersChange,
                     onThemeModeChange = onThemeModeChange,
                     onVoiceInputChange = onVoiceInputChange,
-                    onEditProfile = onEditProfile,
+                    onEditName = onEditName,
+                    onEditLevel = onEditLevel,
+                    onEditSubjects = onEditSubjects,
+                    onEditGoals = onEditGoals,
                     onOpenLanguage = onOpenLanguage,
                     onSeeProPlans = onSeeProPlans,
                 )

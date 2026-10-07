@@ -52,6 +52,10 @@ private val SidePadding = 20.dp
  * The bar sits over the content behind a gradient fade rather than a divider, so a long list looks
  * like it continues underneath instead of being cut off.
  *
+ * With [editing] set it is the frame for changing one answer from Profile instead of a step in the
+ * flow: no progress bar, no "Step n of 4", no Skip, and the button says Save. The screen is the same
+ * one so the two cannot drift apart; only what makes it a *step* is taken away.
+ *
  * It is **fixed to the bottom of the screen** and does not follow the keyboard. Lifting it above the
  * keyboard — as the chat composer does — put a button over the field being typed into and the
  * preview beneath it; here the keyboard simply covers it, and the Done key puts the keyboard away.
@@ -67,6 +71,7 @@ fun SetupScaffold(
     onContinue: () -> Unit,
     modifier: Modifier = Modifier,
     ctaEnabled: Boolean = true,
+    editing: Boolean = false,
     bottomHint: @Composable (() -> Unit)? = null,
     content: @Composable ColumnScope.() -> Unit,
 ) {
@@ -80,7 +85,7 @@ fun SetupScaffold(
     SystemBarIcons(lightStatusBarIcons = colors.isDark)
 
         Column(modifier = Modifier.fillMaxSize().statusBarsPadding()) {
-            SetupTopBar(step = step, onBack = onBack, onSkip = onSkip)
+            SetupTopBar(step = step, editing = editing, onBack = onBack, onSkip = onSkip)
 
             Column(
                 modifier = Modifier
@@ -89,19 +94,22 @@ fun SetupScaffold(
             ) {
                 Box(modifier = Modifier.padding(start = SidePadding, end = SidePadding, top = Dimens.spaceLg)) {
                     Column {
-                        Text(
-                            text = stringResource(R.string.setup_step_label, step, SETUP_STEPS).uppercase(),
-                            style = MaterialTheme.typography.labelSmall.copy(
-                                fontWeight = FontWeight.Bold,
-                                letterSpacing = 0.84.sp,
-                            ),
-                            color = colors.accentText,
-                        )
+                        if (!editing) {
+                            Text(
+                                text = stringResource(R.string.setup_step_label, step, SETUP_STEPS).uppercase(),
+                                style = MaterialTheme.typography.labelSmall.copy(
+                                    fontWeight = FontWeight.Bold,
+                                    letterSpacing = 0.84.sp,
+                                ),
+                                color = colors.accentText,
+                            )
+                        }
                         Text(
                             text = title,
                             style = MaterialTheme.typography.displaySmall,
                             color = colors.textPrimary,
-                            modifier = Modifier.padding(top = Dimens.spaceSm),
+                            // The gap belongs to the step label; with no label above it, none is wanted.
+                            modifier = Modifier.padding(top = if (editing) 0.dp else Dimens.spaceSm),
                         )
                         Text(
                             text = subtitle,
@@ -126,6 +134,7 @@ fun SetupScaffold(
         SetupActionBar(
             ctaText = ctaText,
             ctaEnabled = ctaEnabled,
+            ctaArrow = !editing,
             onContinue = onContinue,
             bottomHint = bottomHint,
             modifier = Modifier.align(Alignment.BottomCenter),
@@ -134,7 +143,7 @@ fun SetupScaffold(
 }
 
 @Composable
-private fun SetupTopBar(step: Int, onBack: () -> Unit, onSkip: () -> Unit) {
+private fun SetupTopBar(step: Int, editing: Boolean, onBack: () -> Unit, onSkip: () -> Unit) {
     val colors = MaterialTheme.appColors
     Row(
         modifier = Modifier
@@ -160,20 +169,24 @@ private fun SetupTopBar(step: Int, onBack: () -> Unit, onSkip: () -> Unit) {
             )
         }
 
-        StepProgress(step = step, modifier = Modifier.weight(1f))
+        // Changing one answer is not a step in anything, so there is no progress to show and nothing
+        // to skip: the back arrow is the whole bar.
+        if (!editing) {
+            StepProgress(step = step, modifier = Modifier.weight(1f))
 
-        Text(
-            text = stringResource(R.string.action_skip),
-            style = MaterialTheme.typography.bodyMedium.copy(
-                fontSize = 14.5.sp,
-                fontWeight = FontWeight.SemiBold,
-            ),
-            color = colors.textTertiary,
-            modifier = Modifier
-                .clip(AppShapes.Pill)
-                .clickable(onClick = onSkip)
-                .padding(vertical = 10.dp, horizontal = Dimens.spaceXxs),
-        )
+            Text(
+                text = stringResource(R.string.action_skip),
+                style = MaterialTheme.typography.bodyMedium.copy(
+                    fontSize = 14.5.sp,
+                    fontWeight = FontWeight.SemiBold,
+                ),
+                color = colors.textTertiary,
+                modifier = Modifier
+                    .clip(AppShapes.Pill)
+                    .clickable(onClick = onSkip)
+                    .padding(vertical = 10.dp, horizontal = Dimens.spaceXxs),
+            )
+        }
     }
 }
 
@@ -203,6 +216,7 @@ private fun StepProgress(step: Int, modifier: Modifier = Modifier) {
 private fun SetupActionBar(
     ctaText: String,
     ctaEnabled: Boolean,
+    ctaArrow: Boolean,
     onContinue: () -> Unit,
     bottomHint: @Composable (() -> Unit)?,
     modifier: Modifier = Modifier,
@@ -224,7 +238,7 @@ private fun SetupActionBar(
         verticalArrangement = Arrangement.spacedBy(Dimens.spaceMd),
     ) {
         bottomHint?.invoke()
-        PrimaryCta(text = ctaText, onClick = onContinue, enabled = ctaEnabled)
+        PrimaryCta(text = ctaText, onClick = onContinue, enabled = ctaEnabled, trailingArrow = ctaArrow)
     }
 }
 

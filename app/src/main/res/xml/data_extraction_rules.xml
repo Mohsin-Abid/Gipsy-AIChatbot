@@ -2,10 +2,12 @@
 <!--
   API 31+ backup rules. Chat history stays on the device it was created on, so the conversation
   database is excluded from cloud backup *and* from direct device-to-device transfer — a transfer
-  still takes the messages off this device. Preferences restore either way.
+  still takes the messages off this device. Preferences restore either way, except voice.xml: it
+  records that the offline speech model was requested on *this* device, and means nothing elsewhere.
 -->
 <data-extraction-rules>
     <cloud-backup>
+        <exclude domain="sharedpref" path="voice.xml" />
         <exclude domain="database" path="aitutor.db" />
         <exclude domain="database" path="aitutor.db-journal" />
         <exclude domain="database" path="aitutor.db-shm" />
@@ -13,6 +15,7 @@
         <exclude domain="file" path="attachments/" />
     </cloud-backup>
     <device-transfer>
+        <exclude domain="sharedpref" path="voice.xml" />
         <exclude domain="database" path="aitutor.db" />
         <exclude domain="database" path="aitutor.db-journal" />
         <exclude domain="database" path="aitutor.db-shm" />

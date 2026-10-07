@@ -47,8 +47,6 @@ import com.aitutor.chatbot.app.domain.model.ThemeMode
 import com.aitutor.chatbot.app.ui.components.AppSwitch
 import com.aitutor.chatbot.app.ui.icons.AppIcons
 import com.aitutor.chatbot.app.ui.main.GlyphTile
-import com.aitutor.chatbot.app.ui.main.HeroIconButton
-import com.aitutor.chatbot.app.ui.main.HeroStatStrip
 import com.aitutor.chatbot.app.ui.main.ListPanel
 import com.aitutor.chatbot.app.ui.main.SectionOverline
 import com.aitutor.chatbot.app.ui.main.TabBottomInset
@@ -88,7 +86,10 @@ fun ProfileScreen(
     onRemindersChange: (Boolean) -> Unit,
     onThemeModeChange: (ThemeMode) -> Unit,
     onVoiceInputChange: (Boolean) -> Unit,
-    onEditProfile: () -> Unit,
+    onEditName: () -> Unit,
+    onEditLevel: () -> Unit,
+    onEditSubjects: () -> Unit,
+    onEditGoals: () -> Unit,
     onOpenLanguage: () -> Unit,
     onSeeProPlans: () -> Unit,
     modifier: Modifier = Modifier,
@@ -106,7 +107,7 @@ fun ProfileScreen(
     // The accent hero runs under the status bar.
     SystemBarIcons(lightStatusBarIcons = true)
 
-        ProfileHero(profile = profile, onEditProfile = onEditProfile)
+        ProfileHero(profile = profile, onEditName = onEditName)
 
         Box(
             modifier = Modifier
@@ -128,18 +129,26 @@ fun ProfileScreen(
             verticalArrangement = Arrangement.spacedBy(28.dp),
         ) {
             SettingsGroup(title = stringResource(R.string.profile_group_learning)) {
+                // One row per screen it opens, so a tap lands on exactly the answer it names.
+                NavigationRow(
+                    icon = AppIcons.School,
+                    label = stringResource(R.string.profile_level_grade),
+                    value = levelAndGrade(profile),
+                    onClick = onEditLevel,
+                )
+                PanelDivider(inset = RowIconInset)
                 NavigationRow(
                     icon = AppIcons.Book,
                     label = stringResource(R.string.profile_subjects),
                     value = stringResource(R.string.profile_subjects_value, profile.subjects.size),
-                    onClick = onEditProfile,
+                    onClick = onEditSubjects,
                 )
                 PanelDivider(inset = RowIconInset)
                 NavigationRow(
                     icon = AppIcons.Target,
                     label = stringResource(R.string.profile_daily_goal),
                     value = stringResource(profile.dailyTime.labelRes),
-                    onClick = onEditProfile,
+                    onClick = onEditGoals,
                 )
                 PanelDivider(inset = RowIconInset)
                 NavigationRow(
@@ -217,29 +226,20 @@ fun ProfileScreen(
 @Composable
 private fun ProfileHero(
     profile: StudentProfile,
-    onEditProfile: () -> Unit,
+    onEditName: () -> Unit,
     modifier: Modifier = Modifier,
 ) {
     val colors = MaterialTheme.appColors
     val name = profile.name.ifBlank { stringResource(R.string.profile_default_name) }
 
-    TabHero(modifier = modifier) {
-        Row(
-            modifier = Modifier.fillMaxWidth(),
-            verticalAlignment = Alignment.CenterVertically,
-            horizontalArrangement = Arrangement.SpaceBetween,
-        ) {
-            Text(
-                text = stringResource(R.string.nav_profile),
-                style = MaterialTheme.typography.headlineSmall,
-                color = Color.White,
-            )
-            HeroIconButton(
-                icon = AppIcons.Settings,
-                contentDescription = stringResource(R.string.cd_settings),
-                onClick = onEditProfile,
-            )
-        }
+    // The upgrade card below overlaps this panel by 48dp, so the bottom padding is that overlap plus
+    // the room that keeps the plan badge from touching the card.
+    TabHero(modifier = modifier, bottomPadding = 76.dp) {
+        Text(
+            text = stringResource(R.string.nav_profile),
+            style = MaterialTheme.typography.headlineSmall,
+            color = Color.White,
+        )
 
         Box {
             Column(
@@ -248,17 +248,28 @@ private fun ProfileHero(
                     .padding(top = Dimens.spaceMd),
                 horizontalAlignment = Alignment.CenterHorizontally,
             ) {
-                AvatarWithEditBadge(name = name, onEdit = onEditProfile)
-                Text(
-                    text = name,
-                    style = MaterialTheme.typography.headlineSmall.copy(
-                        fontSize = 22.sp,
-                        lineHeight = 28.sp,
-                        letterSpacing = (-0.66).sp,
-                    ),
-                    color = Color.White,
-                    modifier = Modifier.padding(top = Dimens.spaceMd),
-                )
+                // The picture and the name are one tap target: both stand for the same thing, and the
+                // only thing about them that can be changed is the name. There is no badge to say so —
+                // the screen it opens is the explanation.
+                Column(
+                    horizontalAlignment = Alignment.CenterHorizontally,
+                    modifier = Modifier
+                        .clip(AppShapes.CardSmall)
+                        .clickable(onClickLabel = stringResource(R.string.cd_edit_name), onClick = onEditName)
+                        .padding(horizontal = 24.dp),
+                ) {
+                    Avatar(name = name)
+                    Text(
+                        text = name,
+                        style = MaterialTheme.typography.headlineSmall.copy(
+                            fontSize = 22.sp,
+                            lineHeight = 28.sp,
+                            letterSpacing = (-0.66).sp,
+                        ),
+                        color = Color.White,
+                        modifier = Modifier.padding(top = Dimens.spaceMd),
+                    )
+                }
                 Text(
                     text = profile.level?.let { stringResource(it.labelRes) }
                         ?: stringResource(R.string.profile_level_unset),
@@ -273,63 +284,34 @@ private fun ProfileHero(
                 PlanBadge(modifier = Modifier.padding(top = 10.dp))
             }
         }
-
-        HeroStatStrip(
-            stats = listOf(
-                stringResource(R.string.profile_stat_questions_value) to
-                    stringResource(R.string.profile_stat_questions_label),
-                stringResource(R.string.profile_stat_notes_value) to
-                    stringResource(R.string.profile_stat_notes_label),
-                stringResource(R.string.profile_stat_streak_value) to
-                    stringResource(R.string.profile_stat_streak_label),
-            ),
-            modifier = Modifier.padding(top = 20.dp),
-        )
     }
 }
 
-/** The avatar carries initials until there is somewhere to store a photo. */
+/**
+ * The avatar carries initials until there is somewhere to store a photo.
+ *
+ * It is not a button on its own: there is no photo to change. Tapping it opens the name editor
+ * because [ProfileHero] makes the picture and the name one target.
+ */
 @Composable
-private fun AvatarWithEditBadge(name: String, onEdit: () -> Unit) {
+private fun Avatar(name: String) {
     val colors = MaterialTheme.appColors
-    Box(modifier = Modifier.size(88.dp)) {
-        Box(
-            modifier = Modifier
-                .size(88.dp)
-                .clip(AppShapes.Pill)
-                .background(colors.surface)
-                .border(3.dp, Color.White.copy(alpha = 0.55f), AppShapes.Pill),
-            contentAlignment = Alignment.Center,
-        ) {
-            Text(
-                text = name.initials(),
-                style = MaterialTheme.typography.displaySmall.copy(
-                    fontSize = 30.sp,
-                    letterSpacing = (-0.6).sp,
-                ),
-                color = colors.accent,
-            )
-        }
-        Box(
-            modifier = Modifier
-                .align(Alignment.BottomEnd)
-                .offset(x = 2.dp, y = 2.dp)
-                .size(32.dp)
-                .clip(AppShapes.Pill)
-                .background(colors.hero)
-                .padding(3.dp)
-                .clip(AppShapes.Pill)
-                .background(colors.surface)
-                .clickable(onClick = onEdit),
-            contentAlignment = Alignment.Center,
-        ) {
-            Icon(
-                imageVector = AppIcons.Pencil,
-                contentDescription = stringResource(R.string.cd_edit_profile),
-                tint = colors.accent,
-                modifier = Modifier.size(14.dp),
-            )
-        }
+    Box(
+        modifier = Modifier
+            .size(88.dp)
+            .clip(AppShapes.Pill)
+            .background(colors.surface)
+            .border(3.dp, Color.White.copy(alpha = 0.55f), AppShapes.Pill),
+        contentAlignment = Alignment.Center,
+    ) {
+        Text(
+            text = name.initials(),
+            style = MaterialTheme.typography.displaySmall.copy(
+                fontSize = 30.sp,
+                letterSpacing = (-0.6).sp,
+            ),
+            color = colors.accent,
+        )
     }
 }
 
@@ -696,6 +678,17 @@ private fun LogOutButton(onClick: () -> Unit) {
 }
 
 /** Up to two initials, so "Alex Morgan" reads "AM" and a single name still gives one letter. */
+/** "School · Grade 10", or whichever half is set, or "Not set" if neither is. */
+@Composable
+private fun levelAndGrade(profile: StudentProfile): String {
+    val level = profile.level?.let { stringResource(it.labelRes) }
+    val grade = profile.grade?.let { stringResource(it.labelRes) }
+    return when {
+        level != null && grade != null -> stringResource(R.string.profile_level_grade_value, level, grade)
+        else -> level ?: grade ?: stringResource(R.string.profile_not_set)
+    }
+}
+
 private fun String.initials(): String =
     trim().split(" ").filter { it.isNotBlank() }.take(2)
         .joinToString("") { it.first().uppercase() }
@@ -714,7 +707,10 @@ private fun ProfileScreenPreview() {
             onRemindersChange = {},
             onThemeModeChange = {},
             onVoiceInputChange = {},
-            onEditProfile = {},
+            onEditName = {},
+            onEditLevel = {},
+            onEditSubjects = {},
+            onEditGoals = {},
             onOpenLanguage = {},
             onSeeProPlans = {},
         )

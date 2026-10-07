@@ -1,11 +1,22 @@
 <?xml version="1.0" encoding="utf-8"?>
 <!--
-  Backup rules for devices below API 31. Preferences are worth restoring onto a new device; the
-  conversation database is not allowed to leave this one, so every file Room creates for it is
+  Backup rules for devices below API 31. They say the same thing as data_extraction_rules.xml: back
+  everything up except what is listed.
+
+  There is deliberately no <include>. Once one exists, only what it names is backed up, and the
+  settings live in DataStore (files/datastore/), not in shared preferences — so an include for
+  shared preferences silently dropped the user's profile and settings on these devices. It also made
+  every <exclude> below a no-op, which is what Android Lint reported as an error.
+
+  The conversation database is not allowed to leave this device, so every file Room creates for it is
   excluded by name — the journal and write-ahead files hold message text just as the main file does.
+
+  voice.xml records that the offline speech model was already requested *on this device*. Restored
+  onto a new phone it would claim a download that never happened there, and dictation would never
+  ask for the model.
 -->
 <full-backup-content>
-    <include domain="sharedpref" path="." />
+    <exclude domain="sharedpref" path="voice.xml" />
     <exclude domain="database" path="aitutor.db" />
     <exclude domain="database" path="aitutor.db-journal" />
     <exclude domain="database" path="aitutor.db-shm" />

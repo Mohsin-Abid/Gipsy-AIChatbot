@@ -5,12 +5,7 @@ import androidx.lifecycle.viewModelScope
 import com.aitutor.chatbot.app.data.prefs.UserPreferencesRepository
 import com.aitutor.chatbot.app.data.prefs.UserSettings
 import com.aitutor.chatbot.app.domain.model.AppLanguage
-import com.aitutor.chatbot.app.domain.model.Grade
 import com.aitutor.chatbot.app.domain.model.StudentProfile
-import com.aitutor.chatbot.app.domain.model.StudyGoal
-import com.aitutor.chatbot.app.domain.model.StudyLevel
-import com.aitutor.chatbot.app.domain.model.StudyTime
-import com.aitutor.chatbot.app.domain.model.Subject
 import com.aitutor.chatbot.app.domain.model.ThemeMode
 import kotlinx.coroutines.flow.SharingStarted
 import kotlinx.coroutines.flow.StateFlow
@@ -62,36 +57,14 @@ class SettingsViewModel(
         preferences.setThemeMode(mode)
     }
 
-    // ---- Profile edits made outside setup ----
-
-    fun setLevel(level: StudyLevel) = updateProfile { it.copy(level = level) }
-
-    fun setGrade(grade: Grade) = updateProfile { it.copy(grade = grade) }
-
-    fun toggleSubject(subject: Subject) = updateProfile { profile ->
-        profile.copy(
-            subjects = if (subject in profile.subjects) {
-                profile.subjects - subject
-            } else {
-                profile.subjects + subject
-            }
-        )
-    }
-
-    fun toggleGoal(goal: StudyGoal) = updateProfile { profile ->
-        profile.copy(
-            goals = when {
-                goal in profile.goals -> profile.goals - goal
-                profile.goals.size < StudentProfile.MAX_GOALS -> profile.goals + goal
-                // At the cap, extra picks are ignored rather than silently replacing a choice.
-                else -> profile.goals
-            }
-        )
-    }
-
-    fun setDailyTime(time: StudyTime) = updateProfile { it.copy(dailyTime = time) }
-
-    private fun updateProfile(transform: (StudentProfile) -> StudentProfile) {
+    /**
+     * Applies [transform] to the *stored* profile and writes the result.
+     *
+     * This is how the edit screens on Profile save. Each one changes only the fields it owns, and
+     * changing them against what is stored right now — rather than against a copy taken when the
+     * screen opened — means saving the name cannot undo a reminder toggled in the meantime.
+     */
+    fun updateProfile(transform: (StudentProfile) -> StudentProfile) {
         val current = settings.value?.profile ?: return
         viewModelScope.launch { preferences.setProfile(transform(current)) }
     }

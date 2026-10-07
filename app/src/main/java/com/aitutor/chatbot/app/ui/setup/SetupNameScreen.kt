@@ -64,16 +64,18 @@ fun SetupNameScreen(
     name: String,
     onNameChange: (String) -> Unit,
     onBack: () -> Unit,
-    onSkip: () -> Unit,
     onContinue: () -> Unit,
     modifier: Modifier = Modifier,
+    onSkip: () -> Unit = {},
+    editing: Boolean = false,
 ) {
     val colors = MaterialTheme.appColors
     SetupScaffold(
         step = 1,
         title = stringResource(R.string.setup_name_title),
         subtitle = stringResource(R.string.setup_name_subtitle),
-        ctaText = stringResource(R.string.setup_continue),
+        ctaText = stringResource(if (editing) R.string.setup_save else R.string.setup_continue),
+        editing = editing,
         onBack = onBack,
         onSkip = onSkip,
         onContinue = onContinue,

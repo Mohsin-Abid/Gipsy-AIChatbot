@@ -7,6 +7,14 @@
     <uses-permission android:name="android.permission.RECORD_AUDIO" />
 
     <!--
+      Dictation is an optional extra — typing works without it — so a device with no microphone must
+      still be able to install the app. Declaring RECORD_AUDIO on its own implies
+      android.hardware.microphone as *required*, which makes Play hide the app from any device that
+      lacks one.
+    -->
+    <uses-feature android:name="android.hardware.microphone" android:required="false" />
+
+    <!--
       Needed on API 30+ for ACTION_IMAGE_CAPTURE to resolve: without it the camera app is invisible
       to this process and the Camera tile would quietly do nothing.
 
@@ -26,6 +34,16 @@
         -->
         <intent>
             <action android:name="android.speech.RecognitionService" />
+        </intent>
+        <!--
+          The same restriction applies to read-aloud: on API 30+ a text-to-speech engine is only
+          visible to an app that asks for it. Google's engine is visible regardless, so this works
+          without the entry on most phones — which is exactly why it is easy to miss. A phone whose
+          default engine is another vendor's (Xiaomi, vivo and Huawei each ship their own) is the one
+          that would otherwise report no engine.
+        -->
+        <intent>
+            <action android:name="android.intent.action.TTS_SERVICE" />
         </intent>
     </queries>
 

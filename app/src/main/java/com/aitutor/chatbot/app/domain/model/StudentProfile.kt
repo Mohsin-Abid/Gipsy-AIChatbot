@@ -75,6 +75,25 @@ data class StudentProfile(
     val dailyTime: StudyTime = StudyTime.Hour1,
     val reminderEnabled: Boolean = true,
 ) {
+    /** Adds [subject], or takes it off if it was already chosen. */
+    fun toggled(subject: Subject): StudentProfile = copy(
+        subjects = if (subject in subjects) subjects - subject else subjects + subject,
+    )
+
+    /**
+     * Adds [goal], or takes it off if it was already chosen.
+     *
+     * At the cap an extra pick is ignored rather than silently replacing one already made — the
+     * screens dim the rest, so nothing is left to tap that would surprise anyone.
+     */
+    fun toggled(goal: StudyGoal): StudentProfile = copy(
+        goals = when {
+            goal in goals -> goals - goal
+            goals.size < MAX_GOALS -> goals + goal
+            else -> goals
+        },
+    )
+
     companion object {
         /** The design shows two goals chosen; more than that stops being a priority. */
         const val MAX_GOALS = 2

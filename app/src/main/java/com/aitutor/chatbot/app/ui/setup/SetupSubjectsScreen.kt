@@ -30,16 +30,18 @@ fun SetupSubjectsScreen(
     selected: Set<Subject>,
     onToggle: (Subject) -> Unit,
     onBack: () -> Unit,
-    onSkip: () -> Unit,
     onContinue: () -> Unit,
     modifier: Modifier = Modifier,
+    onSkip: () -> Unit = {},
+    editing: Boolean = false,
 ) {
     val colors = MaterialTheme.appColors
     SetupScaffold(
         step = 3,
         title = stringResource(R.string.setup_subjects_title),
         subtitle = stringResource(R.string.setup_subjects_subtitle),
-        ctaText = stringResource(R.string.setup_continue),
+        ctaText = stringResource(if (editing) R.string.setup_save else R.string.setup_continue),
+        editing = editing,
         onBack = onBack,
         onSkip = onSkip,
         onContinue = onContinue,
@@ -50,8 +52,12 @@ fun SetupSubjectsScreen(
                     withStyle(SpanStyle(fontWeight = FontWeight.Bold, color = colors.textPrimary)) {
                         append(stringResource(R.string.setup_subjects_selected, selected.size))
                     }
-                    append(" · ")
-                    append(stringResource(R.string.setup_subjects_change_later))
+                    // "You can change these later" is a promise for the first run; on the screen where
+                    // they are being changed it reads as a non sequitur.
+                    if (!editing) {
+                        append(" · ")
+                        append(stringResource(R.string.setup_subjects_change_later))
+                    }
                 },
                 style = MaterialTheme.typography.labelMedium.copy(fontWeight = FontWeight.Normal),
                 color = colors.textSecondary,

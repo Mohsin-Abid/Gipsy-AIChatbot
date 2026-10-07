@@ -191,7 +191,16 @@ class VoiceRecognizer(context: Context) {
 
     private fun create(engine: Engine): SpeechRecognizer? = runCatching {
         when (engine) {
-            Engine.OnDevice -> SpeechRecognizer.createOnDeviceSpeechRecognizer(appContext)
+            // Only ever asked for once `onDeviceAvailable()` has said yes, which needs Android 13, so
+            // this is unreachable on anything older. The check is repeated here anyway so the
+            // guarantee sits on the call itself: it is two functions away otherwise, where neither the
+            // compiler nor the next person to edit this can see it.
+            Engine.OnDevice ->
+                if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.S) {
+                    SpeechRecognizer.createOnDeviceSpeechRecognizer(appContext)
+                } else {
+                    null
+                }
             Engine.System -> SpeechRecognizer.createSpeechRecognizer(appContext)
         }
     }.getOrNull()

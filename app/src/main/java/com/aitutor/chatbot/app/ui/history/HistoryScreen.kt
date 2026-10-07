@@ -40,8 +40,6 @@ import com.aitutor.chatbot.app.domain.model.HistoryGroup
 import com.aitutor.chatbot.app.ui.icons.AppIcons
 import com.aitutor.chatbot.app.ui.main.FilterChipRow
 import com.aitutor.chatbot.app.ui.main.GlyphTile
-import com.aitutor.chatbot.app.ui.main.HeroIconButton
-import com.aitutor.chatbot.app.ui.main.HeroStatStrip
 import com.aitutor.chatbot.app.ui.main.RowChevron
 import com.aitutor.chatbot.app.ui.main.SectionOverline
 import com.aitutor.chatbot.app.ui.main.TabBottomInset
@@ -52,7 +50,6 @@ import com.aitutor.chatbot.app.ui.main.TabSidePadding
 import com.aitutor.chatbot.app.ui.theme.AITutorTheme
 import com.aitutor.chatbot.app.ui.theme.AppShapes
 import com.aitutor.chatbot.app.ui.theme.Dimens
-import com.aitutor.chatbot.app.ui.theme.SectionOverlineStyle
 import com.aitutor.chatbot.app.ui.theme.SampleContent
 import com.aitutor.chatbot.app.ui.theme.TallScreenPreviews
 import com.aitutor.chatbot.app.ui.theme.SystemBarIcons
@@ -62,8 +59,8 @@ private val RowShape = RoundedCornerShape(20.dp)
 private val ShadowTint = Color(0xFF080C28)
 
 /**
- * Past sessions, newest first, grouped by how recent they are. The week's totals sit on the hero so
- * the numbers are the first thing read, then the filter narrows what is listed beneath.
+ * Past sessions, newest first, grouped by how recent they are. The hero is just the title; the
+ * filter narrows what is listed beneath it.
  */
 @Composable
 fun HistoryScreen(
@@ -86,29 +83,12 @@ fun HistoryScreen(
     // The accent hero runs under the status bar.
     SystemBarIcons(lightStatusBarIcons = true)
 
-        TabHero(bottomPadding = 64.dp) {
+        // Short now that it holds only a title. The search bar below overlaps the hero's bottom edge by
+        // 28dp, so this padding is that overlap plus the breathing room under the subtitle.
+        TabHero(bottomPadding = 60.dp) {
             TabHeroTitle(
                 title = stringResource(R.string.history_title),
                 subtitle = stringResource(R.string.history_subtitle),
-                action = {
-                    HeroIconButton(
-                        icon = AppIcons.Filter,
-                        contentDescription = stringResource(R.string.cd_filter_history),
-                        onClick = {},
-                    )
-                },
-            )
-            WeekRow(modifier = Modifier.padding(top = 22.dp))
-            HeroStatStrip(
-                stats = listOf(
-                    stringResource(R.string.history_stat_questions_value) to
-                        stringResource(R.string.history_stat_questions_label),
-                    stringResource(R.string.history_stat_solved_value) to
-                        stringResource(R.string.history_stat_solved_label),
-                    stringResource(R.string.history_stat_time_value) to
-                        stringResource(R.string.history_stat_time_label),
-                ),
-                modifier = Modifier.padding(top = 10.dp),
             )
         }
 
@@ -165,28 +145,6 @@ fun HistoryScreen(
                 )
             }
         }
-    }
-}
-
-/** The week the totals cover. Overline on the left, dates on the right. */
-@Composable
-private fun WeekRow(modifier: Modifier = Modifier) {
-    val colors = MaterialTheme.appColors
-    Row(
-        modifier = modifier.fillMaxWidth(),
-        verticalAlignment = Alignment.CenterVertically,
-        horizontalArrangement = Arrangement.SpaceBetween,
-    ) {
-        Text(
-            text = stringResource(R.string.history_this_week).uppercase(),
-            style = SectionOverlineStyle,
-            color = colors.onAccentMuted,
-        )
-        Text(
-            text = stringResource(R.string.history_week_range),
-            style = MaterialTheme.typography.labelLarge.copy(fontWeight = FontWeight.Normal),
-            color = colors.onAccentMuted,
-        )
     }
 }
 

@@ -56,6 +56,16 @@ sealed interface Route {
     @Serializable data object LanguageSettings : Route
 
     /**
+     * One setup answer, changed from Profile. Each opens the very screen setup uses for that answer,
+     * alone: pre-filled from what is saved, with no progress and no Skip, and saving only the fields
+     * it shows. They are not steps of the setup flow and never lead into it.
+     */
+    @Serializable data object EditName : Route
+    @Serializable data object EditLevel : Route
+    @Serializable data object EditSubjects : Route
+    @Serializable data object EditGoals : Route
+
+    /**
      * A conversation. The tool travels by name so the route stays a plain string, and [chatId] is
      * `0` for a chat that does not exist yet — it is written the first time a question is sent.
      */
@@ -148,15 +158,7 @@ fun AppNavHost(
         composable<Route.SetupSubjects> {
             SetupSubjectsScreen(
                 selected = draftProfile.subjects,
-                onToggle = { subject ->
-                    draftProfile = draftProfile.copy(
-                        subjects = if (subject in draftProfile.subjects) {
-                            draftProfile.subjects - subject
-                        } else {
-                            draftProfile.subjects + subject
-                        }
-                    )
-                },
+                onToggle = { subject -> draftProfile = draftProfile.toggled(subject) },
                 onBack = { navController.popBackStack() },
                 onSkip = { navController.navigate(Route.SetupGoals) },
                 onContinue = { navController.navigate(Route.SetupGoals) },
@@ -167,16 +169,7 @@ fun AppNavHost(
                 goals = draftProfile.goals,
                 dailyTime = draftProfile.dailyTime,
                 reminderEnabled = draftProfile.reminderEnabled,
-                onToggleGoal = { goal ->
-                    val goals = draftProfile.goals
-                    draftProfile = draftProfile.copy(
-                        goals = when {
-                            goal in goals -> goals - goal
-                            goals.size < StudentProfile.MAX_GOALS -> goals + goal
-                            else -> goals
-                        }
-                    )
-                },
+                onToggleGoal = { goal -> draftProfile = draftProfile.toggled(goal) },
                 onTimeChange = { draftProfile = draftProfile.copy(dailyTime = it) },
                 onReminderChange = { draftProfile = draftProfile.copy(reminderEnabled = it) },
                 onBack = { navController.popBackStack() },
@@ -211,8 +204,79 @@ fun AppNavHost(
                     navController.navigate(Route.Chat(entry.tool.name, entry.chatId))
                 },
                 onOpenLanguage = { navController.navigate(Route.LanguageSettings) },
-                onEditProfile = { navController.navigate(Route.SetupLevel) },
+                onEditName = { navController.navigate(Route.EditName) },
+                onEditLevel = { navController.navigate(Route.EditLevel) },
+                onEditSubjects = { navController.navigate(Route.EditSubjects) },
+                onEditGoals = { navController.navigate(Route.EditGoals) },
                 onSeeProPlans = { navController.navigate(Route.Premium) },
+            )
+        }
+        composable<Route.EditName> {
+            var draft by rememberEditableProfile(settings.orDefault().profile)
+            SetupNameScreen(
+                name = draft.name,
+                onNameChange = { draft = draft.copy(name = it) },
+                onBack = { navController.popBackStack() },
+                onContinue = {
+                    val name = draft.name.trim()
+                    settingsViewModel.updateProfile { it.copy(name = name) }
+                    navController.popBackStack()
+                },
+                editing = true,
+            )
+        }
+        composable<Route.EditLevel> {
+            var draft by rememberEditableProfile(settings.orDefault().profile)
+            SetupLevelScreen(
+                level = draft.level,
+                grade = draft.grade,
+                onLevelChange = { draft = draft.copy(level = it) },
+                onGradeChange = { draft = draft.copy(grade = it) },
+                onBack = { navController.popBackStack() },
+                onContinue = {
+                    val edited = draft
+                    settingsViewModel.updateProfile { it.copy(level = edited.level, grade = edited.grade) }
+                    navController.popBackStack()
+                },
+                editing = true,
+            )
+        }
+        composable<Route.EditSubjects> {
+            var draft by rememberEditableProfile(settings.orDefault().profile)
+            SetupSubjectsScreen(
+                selected = draft.subjects,
+                onToggle = { subject -> draft = draft.toggled(subject) },
+                onBack = { navController.popBackStack() },
+                onContinue = {
+                    val subjects = draft.subjects
+                    settingsViewModel.updateProfile { it.copy(subjects = subjects) }
+                    navController.popBackStack()
+                },
+                editing = true,
+            )
+        }
+        composable<Route.EditGoals> {
+            var draft by rememberEditableProfile(settings.orDefault().profile)
+            SetupGoalsScreen(
+                goals = draft.goals,
+                dailyTime = draft.dailyTime,
+                reminderEnabled = draft.reminderEnabled,
+                onToggleGoal = { goal -> draft = draft.toggled(goal) },
+                onTimeChange = { draft = draft.copy(dailyTime = it) },
+                onReminderChange = { draft = draft.copy(reminderEnabled = it) },
+                onBack = { navController.popBackStack() },
+                onContinue = {
+                    val edited = draft
+                    settingsViewModel.updateProfile {
+                        it.copy(
+                            goals = edited.goals,
+                            dailyTime = edited.dailyTime,
+                            reminderEnabled = edited.reminderEnabled,
+                        )
+                    }
+                    navController.popBackStack()
+                },
+                editing = true,
             )
         }
         composable<Route.Chat> { entry ->
@@ -264,6 +328,15 @@ fun AppNavHost(
         }
     }
 }
+
+/**
+ * The profile an edit screen works on: what is saved at the moment it opens, changed only on that
+ * screen and only written back when Save is pressed, so Back discards it. Held in saveable state so a
+ * rotation does not throw away a half-made change.
+ */
+@Composable
+private fun rememberEditableProfile(saved: StudentProfile) =
+    rememberSaveable(stateSaver = StudentProfileSaver) { mutableStateOf(saved) }
 
 /**
  * Settings to draw with while the stored ones are still being read. Only screens past the splash

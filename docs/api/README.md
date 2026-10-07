@@ -125,7 +125,7 @@ These mirror the app's Kotlin enums exactly. Send and expect these strings:
 | | |
 |---|---|
 | `level` | `SCHOOL` `COLLEGE` `UNIVERSITY` |
-| `grade` | `GRADES_1_5` `GRADE_6` `GRADE_7` `GRADE_8` `GRADE_9` `GRADE_10` `GRADE_11` `GRADE_12` |
+| `grade` | `GRADES_1_5` `GRADE_6` `GRADE_7` `GRADE_8` `GRADE_9` `GRADE_10` `GRADE_11` `GRADE_12` `OTHER` |
 | `subjects` | `MATH` `PHYSICS` `CHEMISTRY` `BIOLOGY` `ENGLISH` `HISTORY` `GEOGRAPHY` `COMPUTER_SCIENCE` `ECONOMICS` `LANGUAGES` `ART` `OTHER` |
 | `goals` | `ACE_EXAMS` `FINISH_HOMEWORK` `UNDERSTAND_TOPICS` `IMPROVE_WRITING` — max 2 |
 | `dailyTime` | `MINUTES_15` `MINUTES_30` `HOUR_1` `HOURS_2_PLUS` |

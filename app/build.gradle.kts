@@ -3,6 +3,7 @@ plugins {
     alias(libs.plugins.kotlin.compose)
     alias(libs.plugins.kotlin.serialization)
     alias(libs.plugins.ksp)
+    alias(libs.plugins.androidx.room)
 }
 
 android {
@@ -35,12 +36,11 @@ android {
     buildFeatures {
         compose = true
     }
-    // Room's generated schemas, so a future migration can be written against a known starting point.
-    ksp {
-        arg("room.schemaLocation", "$projectDir/schemas")
-    }
-    // MigrationTestHelper reads those schemas off the device at run time.
-    sourceSets.getByName("androidTest").assets.directories.add("$projectDir/schemas")
+}
+
+// Room's generated schemas, so a future migration can be written against a known starting point.
+room {
+    schemaDirectory("$projectDir/schemas")
 }
 
 dependencies {
