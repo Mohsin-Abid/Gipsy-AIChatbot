@@ -41,7 +41,7 @@
 
     <!-- Language -->
     <string name="language_title">Choose your language</string>
-    <string name="language_subtitle">Used for the app and for AI answers. You can change it later in Settings.</string>
+    <string name="language_subtitle">Used for the app language. You can change it later in Settings.</string>
     <string name="language_search_hint">Search languages</string>
     <string name="language_device_default">Device language</string>
     <string name="language_answers_in">AI answers will be in</string>
@@ -69,6 +69,11 @@
     <string name="signin_benefit_devices">Use it on any device</string>
     <string name="signin_google">Continue with Google</string>
     <string name="signin_skip">Skip for now</string>
+    <string name="signin_in_progress">Signing in…</string>
+    <string name="signin_error_no_account">No Google account found on this phone. Add one in Settings, then try again.</string>
+    <string name="signin_error_no_play">Google sign-in needs Google Play services, which this phone doesn\'t have.</string>
+    <string name="signin_error_network">Can\'t reach Google. Check your connection and try again.</string>
+    <string name="signin_error_generic">Couldn\'t sign you in. Try again.</string>
     <string name="signin_terms">Terms</string>
     <string name="signin_privacy">Privacy Policy</string>
     <!-- %1$s and %2$s are the Terms and Privacy Policy labels, which become links in place. -->
@@ -166,7 +171,7 @@
     <string name="home_prompt">What would you like\nto learn today?</string>
     <string name="home_ask_hint">Ask a question…</string>
     <string name="cd_profile">Your profile</string>
-    <string name="cd_notifications">Notifications</string>
+    <string name="cd_upgrade_to_pro">Upgrade to Pro</string>
     <string name="cd_ask_voice">Ask by voice</string>
     <string name="cd_send_question">Send question</string>
     <string name="home_chip_scan">Scan homework</string>
@@ -181,10 +186,6 @@
     <string name="home_activity_title">Recent Activity</string>
     <string name="home_view_all">View all</string>
 
-    <string name="home_challenge_label">Daily challenge</string>
-    <string name="home_challenge_title">5 quick questions on Cells</string>
-    <string name="home_challenge_detail">About 3 minutes</string>
-    <string name="home_challenge_start">Start</string>
 
     <!-- Study tools -->
     <string name="tool_chatbot">AI Chatbot</string>
@@ -301,6 +302,17 @@
     <string name="profile_help">Help &amp; feedback</string>
     <string name="profile_rate">Rate the app</string>
     <string name="profile_log_out">Log out</string>
+    <string name="profile_logout_title">Log out?</string>
+    <string name="profile_logout_body">You\'ll need to sign in again to keep using AI Tutor.</string>
+    <string name="action_cancel">Cancel</string>
+
+    <!-- Asked when Back is pressed while something is still in progress -->
+    <string name="leave_title">Go back now?</string>
+    <string name="leave_stay">Stay</string>
+    <string name="leave_confirm">Go back</string>
+    <string name="leave_chat_body">Your answer is still on its way. Your question will stay in the chat, but the answer won\'t arrive if you go back now.</string>
+    <string name="leave_attach_body">Your file is still being added. If you go back now, it won\'t be attached.</string>
+    <string name="leave_signin_body">You\'re still being signed in. If you go back now, you may need to sign in again.</string>
     <string name="profile_version">Version %1$s</string>
 
     <!-- Language, reached from Profile -->
@@ -349,8 +361,19 @@
     <string name="chat_menu_text_size">Text size</string>
     <string name="chat_text_smaller">A−</string>
     <string name="chat_text_larger">A+</string>
-    <string name="chat_menu_clear">Clear messages</string>
     <string name="chat_menu_delete">Delete chat</string>
+    <string name="cd_text_smaller">Smaller text</string>
+    <string name="cd_text_larger">Larger text</string>
+
+    <!-- Rename, delete and share -->
+    <string name="chat_rename_title">Rename chat</string>
+    <string name="chat_rename_field">Chat name</string>
+    <string name="chat_rename_save">Save</string>
+    <string name="chat_delete_title">Delete this chat?</string>
+    <string name="chat_delete_body">The conversation and any files attached to it will be deleted. This can\'t be undone.</string>
+    <string name="chat_delete_confirm">Delete</string>
+    <string name="chat_share_you">You</string>
+    <string name="chat_share_attached">Attached: %1$s</string>
 
     <!-- Scan sheet -->
     <string name="scan_title">Scan text</string>

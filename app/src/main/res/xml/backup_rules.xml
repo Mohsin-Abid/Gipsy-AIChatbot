@@ -11,12 +11,17 @@
   The conversation database is not allowed to leave this device, so every file Room creates for it is
   excluded by name — the journal and write-ahead files hold message text just as the main file does.
 
-  voice.xml records that the offline speech model was already requested *on this device*. Restored
-  onto a new phone it would claim a download that never happened there, and dictation would never
-  ask for the model.
+  Shared preferences are excluded wholesale. The app's own settings live in DataStore (files/), not in
+  shared preferences, so everything in that domain belongs to an SDK and is specific to one device:
+  the Firebase sign-in state (a refresh token, which must not ride a backup onto another phone),
+  analytics and crash-reporting state, and voice.xml, which records that the offline speech model was
+  requested *on this device* and would otherwise claim a download that never happened on the next one.
+  The databases are excluded for the same reason as the conversations: Firebase's analytics queues
+  are per-device too.
 -->
 <full-backup-content>
-    <exclude domain="sharedpref" path="voice.xml" />
+    <exclude domain="sharedpref" path="." />
+    <exclude domain="database" path="." />
     <exclude domain="database" path="aitutor.db" />
     <exclude domain="database" path="aitutor.db-journal" />
     <exclude domain="database" path="aitutor.db-shm" />

@@ -18,6 +18,7 @@ import com.aitutor.chatbot.app.data.voice.VoiceRecognizer
 import com.aitutor.chatbot.app.data.prefs.UserPreferencesRepository
 import com.aitutor.chatbot.app.data.repository.ChatRepository
 import com.aitutor.chatbot.app.domain.model.AnswerBlock
+import com.aitutor.chatbot.app.domain.model.ChatTextSize
 import com.aitutor.chatbot.app.domain.model.Attachment
 import com.aitutor.chatbot.app.domain.model.ScanSource
 import com.aitutor.chatbot.app.domain.model.ChatMessage
@@ -26,15 +27,23 @@ import com.aitutor.chatbot.app.navigation.Route
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
+import kotlinx.coroutines.flow.distinctUntilChanged
+import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.Job
+import kotlinx.coroutines.cancelAndJoin
 import kotlinx.coroutines.launch
 
 /** What the chat screen draws. */
 data class ChatUiState(
     val tool: StudyTool = StudyTool.Chatbot,
     val subject: String = "",
+    /** The conversation's saved id, or null until the first question is sent and there is a chat to act on. */
+    val chatId: Long? = null,
+    /** The name it has in History — what Rename starts from. */
+    val title: String = "",
+    val textSize: ChatTextSize = ChatTextSize.Default,
     val storedMessages: List<ChatMessage> = emptyList(),
     val draft: String = "",
     val sending: Boolean = false,
@@ -65,6 +74,12 @@ data class ChatUiState(
      */
     val canSend: Boolean
         get() = (draft.isNotBlank() || pendingAttachment != null) && !sending && !attaching
+
+    /** Rename, share and delete act on a saved conversation, and an empty one is not saved yet. */
+    val hasChat: Boolean get() = chatId != null
+
+    /** Work that leaving the screen would cut short — what Back asks about before it goes. */
+    val isBusy: Boolean get() = sending || attaching
 
     val newestAnswerBlocks: List<AnswerBlock>
         get() = storedMessages.filterIsInstance<ChatMessage.Assistant>().lastOrNull()?.blocks.orEmpty()
@@ -110,12 +125,26 @@ class ChatViewModel(
     private var chatId: Long? = savedStateHandle.get<Long>(Route.Chat.CHAT_ID_KEY)
         ?.takeIf { it > 0 }
 
-    private val _state = MutableStateFlow(ChatUiState(tool = tool))
+    // A question placed in the composer by a Home chip. Not sent: the student does that.
+    private val _state = MutableStateFlow(
+        ChatUiState(tool = tool, draft = savedStateHandle.get<String>(Route.Chat.DRAFT_KEY).orEmpty())
+    )
     val state: StateFlow<ChatUiState> = _state.asStateFlow()
 
     init {
-        chatId?.let(::observe)
+        chatId?.let { id ->
+            _state.update { it.copy(chatId = id) }
+            observe(id)
+        }
         observeSpeaker()
+        observeTextSize()
+    }
+
+    /** The size is the person's choice for every chat, so it is read from settings, not kept here. */
+    private fun observeTextSize() = viewModelScope.launch {
+        preferences.settings.map { it.chatTextSize }.distinctUntilChanged().collect { size ->
+            _state.update { it.copy(textSize = size) }
+        }
     }
 
     /**
@@ -138,7 +167,7 @@ class ChatViewModel(
 
     private fun observe(id: Long) = viewModelScope.launch {
         chats.header(id)?.let { header ->
-            _state.update { it.copy(tool = header.tool, subject = header.subject) }
+            _state.update { it.copy(tool = header.tool, subject = header.subject, title = header.title) }
         }
         chats.observeMessages(id).collect { messages ->
             _state.update { it.copy(storedMessages = messages) }
@@ -294,13 +323,15 @@ class ChatViewModel(
      * The typing indicator is a local addition to the list, not a stored row — it belongs to this
      * request and disappears with it, whether the request succeeded or failed.
      */
+    private var sendJob: Job? = null
+
     fun send() {
         val current = _state.value
         if (!current.canSend) return
         val question = current.draft.trim()
         val attachment = current.pendingAttachment
 
-        viewModelScope.launch {
+        sendJob = viewModelScope.launch {
             _state.update {
                 it.copy(draft = "", pendingAttachment = null, sending = true, errorRes = null)
             }
@@ -312,6 +343,7 @@ class ChatViewModel(
                 subject = profile.subjects.firstOrNull()?.name.orEmpty(),
             ).also { created ->
                 chatId = created
+                _state.update { it.copy(chatId = created) }
                 observe(created)
             }
 
@@ -330,14 +362,32 @@ class ChatViewModel(
         }
     }
 
-    fun clearMessages() {
+    /** Renames the chat in History. A blank name is ignored: it would leave a row nobody can read. */
+    fun rename(title: String) {
         val id = chatId ?: return
-        viewModelScope.launch { chats.clearMessages(id) }
+        val clean = title.toTitle().takeIf { it.isNotEmpty() } ?: return
+        _state.update { it.copy(title = clean) }
+        viewModelScope.launch { chats.rename(id, clean) }
     }
 
-    fun deleteChat() {
+    fun setTextSize(size: ChatTextSize) {
+        viewModelScope.launch { preferences.setChatTextSize(size) }
+    }
+
+    /**
+     * Deletes the chat, then calls [onDeleted] — which is what leaves the screen.
+     *
+     * The order matters twice over. A request still in flight is stopped first: its answer would be
+     * written into a chat that no longer exists. And the screen may only close once the delete has
+     * finished, because closing it clears this ViewModel and with it the coroutine doing the work.
+     */
+    fun deleteChat(onDeleted: () -> Unit) {
         val id = chatId ?: return
-        viewModelScope.launch { chats.delete(id) }
+        viewModelScope.launch {
+            sendJob?.cancelAndJoin()
+            chats.delete(id)
+            onDeleted()
+        }
     }
 
     /**
@@ -388,14 +438,14 @@ private fun VoiceError.toMessageRes(): Int = when (this) {
  * A chat's title is its opening question, shortened. Naming a conversation after what was asked is
  * what makes the history list readable without opening anything.
  */
-private fun String.toTitle(): String {
+internal fun String.toTitle(): String {
     // A question can now run over several lines, and a history row is a single one — cut at the
     // first newline it would read "Solve this:" and lose the rest of what was asked.
     val oneLine = replace(Regex("\\s+"), " ").trim()
     return if (oneLine.length <= TITLE_MAX_LENGTH) oneLine else oneLine.take(TITLE_MAX_LENGTH).trimEnd() + "…"
 }
 
-private const val TITLE_MAX_LENGTH = 60
+internal const val TITLE_MAX_LENGTH = 60
 
 @StringRes
 private fun Throwable.toMessageRes(): Int = when (this) {

@@ -33,11 +33,13 @@ import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.drawscope.Stroke
 import androidx.compose.ui.graphics.vector.ImageVector
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import com.aitutor.chatbot.app.R
 import com.aitutor.chatbot.app.ui.icons.AppIcons
 import com.aitutor.chatbot.app.ui.theme.AppShapes
 import com.aitutor.chatbot.app.ui.theme.Dimens
@@ -141,6 +143,34 @@ fun TabHeroTitle(
             )
         }
         action?.invoke()
+    }
+}
+
+/**
+ * The upgrade diamond at the top right of every tab's hero.
+ *
+ * It opens the Pro screen, and it is for someone who is not subscribed: callers leave it out for a
+ * subscriber rather than hiding it here, so a subscriber's header has nothing in that corner at all.
+ * It sits in the same place on Home, Tools, History and Profile, so it reads as one control that
+ * follows the user from tab to tab.
+ */
+@Composable
+fun UpgradeDiamondButton(onClick: () -> Unit, modifier: Modifier = Modifier) {
+    Box(
+        modifier = modifier
+            .size(44.dp)
+            .clip(AppShapes.Pill)
+            .background(OnHero.FillSoft)
+            .border(1.dp, OnHero.StrokeSoft, AppShapes.Pill)
+            .clickable(onClick = onClick),
+        contentAlignment = Alignment.Center,
+    ) {
+        Icon(
+            imageVector = AppIcons.Diamond,
+            contentDescription = stringResource(R.string.cd_upgrade_to_pro),
+            tint = Color.White,
+            modifier = Modifier.size(22.dp),
+        )
     }
 }
 

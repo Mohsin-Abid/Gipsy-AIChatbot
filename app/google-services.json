@@ -1,0 +1,39 @@
+{
+  "project_info": {
+    "project_number": "17337074906",
+    "project_id": "ai-chatot-e38e0",
+    "storage_bucket": "ai-chatot-e38e0.firebasestorage.app"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:17337074906:android:45158e0b0f16b1b46451e3",
+        "android_client_info": {
+          "package_name": "com.aitutor.chatbot.app"
+        }
+      },
+      "oauth_client": [
+        {
+          "client_id": "17337074906-io180qqerqelrq3k5il948nk270ap05h.apps.googleusercontent.com",
+          "client_type": 3
+        }
+      ],
+      "api_key": [
+        {
+          "current_key": "AIzaSyD4nTGT4SsKqIPhvBptMJDSV8PTcEh92BM"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": [
+            {
+              "client_id": "17337074906-io180qqerqelrq3k5il948nk270ap05h.apps.googleusercontent.com",
+              "client_type": 3
+            }
+          ]
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}

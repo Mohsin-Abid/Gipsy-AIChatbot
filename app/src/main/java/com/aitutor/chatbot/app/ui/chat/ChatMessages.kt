@@ -20,6 +20,7 @@ import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.compositionLocalOf
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.alpha
@@ -30,6 +31,7 @@ import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.SpanStyle
+import androidx.compose.ui.text.TextStyle
 import androidx.compose.ui.text.buildAnnotatedString
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextOverflow
@@ -39,6 +41,7 @@ import androidx.compose.ui.unit.sp
 import com.aitutor.chatbot.app.R
 import com.aitutor.chatbot.app.domain.model.AnswerBlock
 import com.aitutor.chatbot.app.domain.model.Attachment
+import com.aitutor.chatbot.app.domain.model.ChatTextSize
 import com.aitutor.chatbot.app.ui.icons.AppIcons
 import com.aitutor.chatbot.app.ui.theme.AppShapes
 import com.aitutor.chatbot.app.ui.theme.Dimens
@@ -68,6 +71,17 @@ internal fun AssistantAvatar(modifier: Modifier = Modifier) {
     }
 }
 
+/** The size of conversation text chosen in the chat menu; messages read it, the rest of the screen does not. */
+internal val LocalChatTextSize = compositionLocalOf { ChatTextSize.Default }
+
+/** Body text for a message, scaled to [LocalChatTextSize] — size and line height together, so the leading keeps its proportion. */
+@Composable
+private fun messageTextStyle(): TextStyle {
+    val base = MaterialTheme.typography.bodyLarge
+    val scale = LocalChatTextSize.current.scale
+    return base.copy(fontSize = base.fontSize * scale, lineHeight = base.lineHeight * scale)
+}
+
 /** The centred day separator. */
 @Composable
 internal fun DayMarker(label: String, modifier: Modifier = Modifier) {
@@ -88,7 +102,7 @@ internal fun UserBubble(text: String, modifier: Modifier = Modifier) {
     val colors = MaterialTheme.appColors
     Text(
         text = text,
-        style = MaterialTheme.typography.bodyLarge.copy(lineHeight = 22.sp),
+        style = messageTextStyle(),
         color = colors.onAccent,
         modifier = modifier
             .widthIn(max = BubbleMaxWidth)
@@ -205,7 +219,7 @@ internal fun AssistantBubble(
             when (block) {
                 is AnswerBlock.Paragraph -> Text(
                     text = block.text,
-                    style = MaterialTheme.typography.bodyLarge.copy(lineHeight = 22.sp),
+                    style = messageTextStyle(),
                     color = colors.textPrimary,
                 )
                 is AnswerBlock.Bullet -> BulletLine(term = block.term, text = block.text)
@@ -233,7 +247,7 @@ private fun BulletLine(term: String, text: String) {
                 append(" ")
                 append(text)
             },
-            style = MaterialTheme.typography.bodyLarge.copy(lineHeight = 22.sp),
+            style = messageTextStyle(),
             color = colors.textSecondary,
         )
     }

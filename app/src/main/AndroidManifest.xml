@@ -1,7 +1,18 @@
 <?xml version="1.0" encoding="utf-8"?>
-<manifest xmlns:android="http://schemas.android.com/apk/res/android">
+<manifest xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:tools="http://schemas.android.com/tools">
 
     <uses-permission android:name="android.permission.INTERNET" />
+
+    <!--
+      Firebase Analytics adds three advertising permissions by default: the Play services advertising
+      ID, and the two Android 13+ Privacy Sandbox ones for the ad ID and ad attribution. This app shows
+      no ads and has no use for any of them, and keeping the first would oblige an "Advertising ID"
+      declaration in Play Console. Removing them costs a few attribution features, none of which are used.
+    -->
+    <uses-permission android:name="com.google.android.gms.permission.AD_ID" tools:node="remove" />
+    <uses-permission android:name="android.permission.ACCESS_ADSERVICES_AD_ID" tools:node="remove" />
+    <uses-permission android:name="android.permission.ACCESS_ADSERVICES_ATTRIBUTION" tools:node="remove" />
 
     <!-- Dictation. Asked for at the moment the mic is tapped, not at launch. -->
     <uses-permission android:name="android.permission.RECORD_AUDIO" />

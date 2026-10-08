@@ -272,14 +272,6 @@ object AppIcons {
     val TextSize: ImageVector by lazy {
         stroked("TextSize", "M4 20l5-14 5 14", "M6 15h6", "M16 20l2.5-7 2.5 7", width = 2f)
     }
-    val Eraser: ImageVector by lazy {
-        stroked(
-            "Eraser",
-            "M20 20H9L4 15a2 2 0 0 1 0-2.8l8.2-8.2a2 2 0 0 1 2.8 0L20 9a2 2 0 0 1 0 2.8L13 19",
-            "M9 11l6 6",
-            width = 2f,
-        )
-    }
     val Trash: ImageVector by lazy {
         stroked(
             "Trash",
@@ -400,6 +392,17 @@ object AppIcons {
     }
     val Pencil: ImageVector by lazy {
         stroked("Pencil", "M16.5 3.5a2.1 2.1 0 0 1 3 3L7 19l-4 1 1-4z", width = 2f)
+    }
+
+    /** The upgrade diamond: a cut gem, outlined, with its table and facets. */
+    val Diamond: ImageVector by lazy {
+        stroked(
+            "Diamond",
+            "M6 3h12l4 6-10 13L2 9z",
+            "M11 3L8 9l4 13 4-13-3-6",
+            "M2 9h20",
+            width = 1.9f,
+        )
     }
 
     /** The "upgrade" crown. Solid, so it reads at 22dp inside a filled accent tile. */

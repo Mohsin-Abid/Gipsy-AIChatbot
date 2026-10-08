@@ -24,6 +24,7 @@ import com.aitutor.chatbot.app.domain.model.HistoryEntry
 import com.aitutor.chatbot.app.domain.model.StudentProfile
 import com.aitutor.chatbot.app.domain.model.StudyTool
 import com.aitutor.chatbot.app.domain.model.ThemeMode
+import com.aitutor.chatbot.app.navigation.ChatLaunch
 import com.aitutor.chatbot.app.ui.history.HistoryScreen
 import com.aitutor.chatbot.app.ui.history.HistoryViewModel
 import com.aitutor.chatbot.app.ui.home.HomeScreen
@@ -52,6 +53,7 @@ fun MainShell(
     onThemeModeChange: (ThemeMode) -> Unit,
     onVoiceInputChange: (Boolean) -> Unit,
     onToolClick: (StudyTool) -> Unit,
+    onLaunchChat: (ChatLaunch) -> Unit,
     onOpenChat: (HistoryEntry) -> Unit,
     onOpenLanguage: () -> Unit,
     onEditName: () -> Unit,
@@ -59,7 +61,9 @@ fun MainShell(
     onEditSubjects: () -> Unit,
     onEditGoals: () -> Unit,
     onSeeProPlans: () -> Unit,
+    onLogOut: () -> Unit,
     modifier: Modifier = Modifier,
+    showUpgrade: Boolean = false,
 ) {
     var tab by rememberSaveable { mutableStateOf(MainTab.Home) }
     val colors = MaterialTheme.appColors
@@ -73,13 +77,24 @@ fun MainShell(
                 MainTab.Home -> HomeTab(
                     userName = profile.name,
                     onToolClick = onToolClick,
+                    onLaunchChat = onLaunchChat,
                     onOpenChat = onOpenChat,
                     onSeeAllTools = { tab = MainTab.Tools },
                     onViewHistory = { tab = MainTab.History },
                     onOpenProfile = { tab = MainTab.Profile },
+                    showUpgrade = showUpgrade,
+                    onSeeProPlans = onSeeProPlans,
                 )
-                MainTab.Tools -> ToolsScreen(onToolClick = onToolClick)
-                MainTab.History -> HistoryTab(onEntryClick = onOpenChat)
+                MainTab.Tools -> ToolsScreen(
+                    onToolClick = onToolClick,
+                    showUpgrade = showUpgrade,
+                    onSeeProPlans = onSeeProPlans,
+                )
+                MainTab.History -> HistoryTab(
+                    onEntryClick = onOpenChat,
+                    showUpgrade = showUpgrade,
+                    onSeeProPlans = onSeeProPlans,
+                )
                 MainTab.Profile -> ProfileScreen(
                     profile = profile,
                     language = language,
@@ -95,6 +110,8 @@ fun MainShell(
                     onEditGoals = onEditGoals,
                     onOpenLanguage = onOpenLanguage,
                     onSeeProPlans = onSeeProPlans,
+                    onLogOut = onLogOut,
+                    showUpgrade = showUpgrade,
                 )
         }
 
@@ -113,10 +130,13 @@ fun MainShell(
 private fun HomeTab(
     userName: String,
     onToolClick: (StudyTool) -> Unit,
+    onLaunchChat: (ChatLaunch) -> Unit,
     onOpenChat: (HistoryEntry) -> Unit,
     onSeeAllTools: () -> Unit,
     onViewHistory: () -> Unit,
     onOpenProfile: () -> Unit,
+    onSeeProPlans: () -> Unit,
+    showUpgrade: Boolean,
 ) {
     val viewModel: HomeViewModel = viewModel(factory = AppViewModelFactory.home)
     val state by viewModel.state.collectAsStateWithLifecycle()
@@ -125,15 +145,22 @@ private fun HomeTab(
         userName = userName.ifBlank { stringResource(R.string.profile_default_name) },
         activity = state.activity,
         onToolClick = onToolClick,
+        onLaunchChat = onLaunchChat,
         onOpenChat = onOpenChat,
         onSeeAllTools = onSeeAllTools,
         onViewHistory = onViewHistory,
         onOpenProfile = onOpenProfile,
+        onSeeProPlans = onSeeProPlans,
+        showUpgrade = showUpgrade,
     )
 }
 
 @Composable
-private fun HistoryTab(onEntryClick: (HistoryEntry) -> Unit) {
+private fun HistoryTab(
+    onEntryClick: (HistoryEntry) -> Unit,
+    onSeeProPlans: () -> Unit,
+    showUpgrade: Boolean,
+) {
     val viewModel: HistoryViewModel = viewModel(factory = AppViewModelFactory.history)
     val state by viewModel.state.collectAsStateWithLifecycle()
 
@@ -141,5 +168,7 @@ private fun HistoryTab(onEntryClick: (HistoryEntry) -> Unit) {
         state = state,
         onFilterChange = viewModel::setFilter,
         onEntryClick = onEntryClick,
+        onSeeProPlans = onSeeProPlans,
+        showUpgrade = showUpgrade,
     )
 }

@@ -39,11 +39,19 @@ class SettingsViewModel(
         preferences.setLanguage(language)
     }
 
-    /** Writes the profile gathered during setup and marks first run done, in that order. */
-    fun completeSetup(profile: StudentProfile) = viewModelScope.launch {
+    /**
+     * Writes the profile gathered during setup, records whose it is, and marks first run done, in
+     * that order. [ownerUid] is null for someone who skipped sign-in: their setup is then unowned,
+     * and the account they sign in with later claims it.
+     */
+    fun completeSetup(profile: StudentProfile, ownerUid: String?) = viewModelScope.launch {
         preferences.setProfile(profile)
+        preferences.setSetupOwner(ownerUid)
         preferences.setFirstRunComplete()
     }
+
+    /** An account takes ownership of a setup nobody owned yet. */
+    fun claimSetup(uid: String) = viewModelScope.launch { preferences.setSetupOwner(uid) }
 
     fun setRemindersEnabled(enabled: Boolean) = viewModelScope.launch {
         preferences.setRemindersEnabled(enabled)

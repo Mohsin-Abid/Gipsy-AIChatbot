@@ -8,6 +8,7 @@ import androidx.datastore.preferences.core.edit
 import androidx.datastore.preferences.core.stringPreferencesKey
 import androidx.datastore.preferences.preferencesDataStore
 import com.aitutor.chatbot.app.domain.model.AppLanguage
+import com.aitutor.chatbot.app.domain.model.ChatTextSize
 import com.aitutor.chatbot.app.domain.model.Grade
 import com.aitutor.chatbot.app.domain.model.StudentProfile
 import com.aitutor.chatbot.app.domain.model.StudyGoal
@@ -28,6 +29,17 @@ data class UserSettings(
     val remindersEnabled: Boolean = true,
     val voiceInputEnabled: Boolean = true,
     val themeMode: ThemeMode = ThemeMode.Default,
+    val chatTextSize: ChatTextSize = ChatTextSize.Default,
+    /**
+     * Whether the user has Pro. **Read only on the device**: the client may show it but never grants
+     * it. The only writer will be purchase verification, once the server confirms a Play token.
+     */
+    val isPro: Boolean = false,
+    /**
+     * The account `uid` whose setup is saved here, or null if no account owns it yet. See
+     * [com.aitutor.chatbot.app.navigation.afterSignIn] for why the phone alone is not enough to tell.
+     */
+    val setupOwnerUid: String? = null,
 )
 
 /**
@@ -52,6 +64,9 @@ class UserPreferencesRepository(private val context: Context) {
         val reminders = booleanPreferencesKey("reminders_enabled")
         val voiceInput = booleanPreferencesKey("voice_input_enabled")
         val themeMode = stringPreferencesKey("theme_mode")
+        val chatTextSize = stringPreferencesKey("chat_text_size")
+        val isPro = booleanPreferencesKey("is_pro")
+        val setupOwnerUid = stringPreferencesKey("setup_owner_uid")
     }
 
     val settings: Flow<UserSettings> = context.dataStore.data.map { prefs ->
@@ -76,12 +91,20 @@ class UserPreferencesRepository(private val context: Context) {
             remindersEnabled = prefs[Keys.reminders] ?: true,
             voiceInputEnabled = prefs[Keys.voiceInput] ?: true,
             themeMode = ThemeMode.fromNameOrDefault(prefs[Keys.themeMode]),
+            chatTextSize = ChatTextSize.fromNameOrDefault(prefs[Keys.chatTextSize]),
+            isPro = prefs[Keys.isPro] ?: false,
+            setupOwnerUid = prefs[Keys.setupOwnerUid],
         )
     }
 
     suspend fun setLanguage(language: AppLanguage) = edit { it[Keys.languageTag] = language.tag }
 
     suspend fun setFirstRunComplete() = edit { it[Keys.firstRunComplete] = true }
+
+    /** Records whose setup this is. Null leaves it unowned, for the next account to claim. */
+    suspend fun setSetupOwner(uid: String?) = edit { prefs ->
+        if (uid == null) prefs.remove(Keys.setupOwnerUid) else prefs[Keys.setupOwnerUid] = uid
+    }
 
     suspend fun setProfile(profile: StudentProfile) = edit { prefs ->
         prefs[Keys.name] = profile.name
@@ -98,6 +121,8 @@ class UserPreferencesRepository(private val context: Context) {
     suspend fun setVoiceInputEnabled(enabled: Boolean) = edit { it[Keys.voiceInput] = enabled }
 
     suspend fun setThemeMode(mode: ThemeMode) = edit { it[Keys.themeMode] = mode.name }
+
+    suspend fun setChatTextSize(size: ChatTextSize) = edit { it[Keys.chatTextSize] = size.name }
 
     private suspend fun edit(block: (androidx.datastore.preferences.core.MutablePreferences) -> Unit) {
         context.dataStore.edit(block)

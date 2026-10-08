@@ -2,6 +2,7 @@ package com.aitutor.chatbot.app.ui.chat
 
 import android.text.format.DateUtils
 import androidx.annotation.StringRes
+import androidx.activity.compose.BackHandler
 import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.result.contract.ActivityResultContracts
 import androidx.core.app.ActivityCompat
@@ -31,15 +32,19 @@ import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.CompositionLocalProvider
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.remember
 import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
 import androidx.compose.runtime.snapshotFlow
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
+import androidx.compose.ui.focus.FocusRequester
+import androidx.compose.ui.focus.focusRequester
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.SolidColor
 import androidx.compose.ui.graphics.vector.ImageVector
@@ -53,12 +58,19 @@ import androidx.compose.ui.unit.sp
 import com.aitutor.chatbot.app.R
 import android.Manifest
 import android.app.Activity
+import android.content.Context
+import android.content.Intent
 import android.content.pm.PackageManager
 import android.net.Uri
 import com.aitutor.chatbot.app.domain.model.Attachment
 import com.aitutor.chatbot.app.domain.model.ChatMessage
+import com.aitutor.chatbot.app.domain.model.ChatTextSize
 import com.aitutor.chatbot.app.domain.model.ScanSource
 import com.aitutor.chatbot.app.domain.model.StudyTool
+import com.aitutor.chatbot.app.navigation.ChatStart
+import com.aitutor.chatbot.app.ui.components.ConfirmDialog
+import com.aitutor.chatbot.app.ui.components.ConfirmTone
+import com.aitutor.chatbot.app.ui.components.rememberLeaveGuard
 import com.aitutor.chatbot.app.ui.icons.AppIcons
 import com.aitutor.chatbot.app.ui.theme.AITutorTheme
 import com.aitutor.chatbot.app.ui.theme.AppShapes
@@ -92,7 +104,7 @@ private val ComposerTextInset = 11.dp
 private val HeaderIconShape = RoundedCornerShape(12.dp)
 
 /** Which overlay, if any, is open over the thread. Only one can be at a time. */
-internal enum class ChatOverlay { None, Scan, AnswerOptions, ChatMenu, Voice }
+internal enum class ChatOverlay { None, Scan, AnswerOptions, ChatMenu, Voice, RenameChat, ConfirmDelete }
 
 /**
  * The conversation.
@@ -107,7 +119,10 @@ fun ChatScreen(
     onDraftChange: (String) -> Unit,
     onSend: () -> Unit,
     onSelectText: () -> Unit,
-    onClearMessages: () -> Unit,
+    onNewChat: () -> Unit,
+    onRename: (String) -> Unit,
+    onDeleteChat: () -> Unit,
+    onTextSizeChange: (ChatTextSize) -> Unit,
     onReadAloud: (Long) -> Unit,
     onErrorShown: () -> Unit,
     onFilePicked: (Uri, ScanSource) -> Unit,
@@ -120,12 +135,16 @@ fun ChatScreen(
     onVoicePermissionDenied: (askableAgain: Boolean) -> Unit,
     voiceInputEnabled: Boolean,
     modifier: Modifier = Modifier,
+    start: ChatStart = ChatStart.None,
 ) {
     val colors = MaterialTheme.appColors
     var overlay by rememberSaveable { mutableStateOf(ChatOverlay.None) }
+    val composerFocus = remember { FocusRequester() }
     val listState = rememberLazyListState()
     val pickers = rememberAttachmentPickers(onPicked = onFilePicked, onNoCameraApp = onNoCameraApp)
     val context = LocalContext.current
+    // A chat with no saved name yet is shared under the name of the tool it was opened in.
+    val toolLabel = stringResource(state.tool.labelRes)
 
     // Asked for when the mic is tapped, not at launch — at the moment its purpose is obvious.
     val requestMicrophone = rememberLauncherForActivityResult(
@@ -144,6 +163,31 @@ fun ChatScreen(
     }
     // A plain surface sits under the status bar, so the icons follow the theme.
     SystemBarIcons(lightStatusBarIcons = colors.isDark)
+
+    // How this chat was opened, acted on once: turning the phone must not reopen the sheet or raise
+    // the keyboard again over whatever the student has since done.
+    var started by rememberSaveable { mutableStateOf(false) }
+    LaunchedEffect(Unit) {
+        if (started) return@LaunchedEffect
+        started = true
+        when (start) {
+            ChatStart.None -> Unit
+            ChatStart.Compose -> composerFocus.requestFocus()
+            ChatStart.Scan -> overlay = ChatOverlay.Scan
+        }
+    }
+
+    // Back and the header arrow ask first while an answer or a file is still arriving.
+    val requestLeave = rememberLeaveGuard(
+        busy = state.isBusy,
+        bodyRes = if (state.sending) R.string.leave_chat_body else R.string.leave_attach_body,
+        onLeave = onBack,
+    )
+    // After the guard, so it is asked first: an open sheet, menu or dictation panel is closed by
+    // Back before the screen is treated as leaving.
+    BackHandler(enabled = overlay != ChatOverlay.None || state.voice != null) {
+        if (state.voice != null) onVoiceCancelled() else overlay = ChatOverlay.None
+    }
 
 
     // A new message should be visible without the student scrolling for it.
@@ -184,7 +228,7 @@ fun ChatScreen(
             ChatHeader(
                 tool = state.tool,
                 subject = state.subject.ifBlank { stringResource(state.tool.taglineRes) },
-                onBack = onBack,
+                onBack = requestLeave,
                 onOptions = { overlay = ChatOverlay.ChatMenu },
             )
 
@@ -196,20 +240,22 @@ fun ChatScreen(
                         .fillMaxWidth(),
                 )
             } else {
-                LazyColumn(
-                    state = listState,
-                    modifier = Modifier.weight(1f),
-                    contentPadding = PaddingValues(horizontal = Dimens.spaceLg + 2.dp, vertical = 20.dp),
-                    verticalArrangement = Arrangement.spacedBy(20.dp),
-                ) {
-                    items(items = state.messages, key = ChatMessage::listKey) { message ->
-                        MessageRow(
-                            message = message,
-                            onMore = { overlay = ChatOverlay.AnswerOptions },
-                            onReadAloud = onReadAloud,
-                            speakingMessageId = state.speakingMessageId,
-                            modifier = Modifier.fillMaxWidth(),
-                        )
+                CompositionLocalProvider(LocalChatTextSize provides state.textSize) {
+                    LazyColumn(
+                        state = listState,
+                        modifier = Modifier.weight(1f),
+                        contentPadding = PaddingValues(horizontal = Dimens.spaceLg + 2.dp, vertical = 20.dp),
+                        verticalArrangement = Arrangement.spacedBy(20.dp),
+                    ) {
+                        items(items = state.messages, key = ChatMessage::listKey) { message ->
+                            MessageRow(
+                                message = message,
+                                onMore = { overlay = ChatOverlay.AnswerOptions },
+                                onReadAloud = onReadAloud,
+                                speakingMessageId = state.speakingMessageId,
+                                modifier = Modifier.fillMaxWidth(),
+                            )
+                        }
                     }
                 }
             }
@@ -223,6 +269,7 @@ fun ChatScreen(
                 attaching = state.attaching,
                 onAttachmentRemoved = onAttachmentRemoved,
                 onDraftChange = onDraftChange,
+                composerFocus = composerFocus,
                 onScan = { overlay = ChatOverlay.Scan },
                 voiceInputEnabled = voiceInputEnabled,
                 onVoice = {
@@ -258,11 +305,49 @@ fun ChatScreen(
         ChatOptionsMenu(
             visible = overlay == ChatOverlay.ChatMenu,
             onDismiss = { overlay = ChatOverlay.None },
-            onClearMessages = {
+            hasChat = state.hasChat,
+            canStartNew = state.hasChat && !state.isBusy,
+            textSize = state.textSize,
+            onNewChat = {
                 overlay = ChatOverlay.None
-                onClearMessages()
+                onNewChat()
             },
+            onRename = { overlay = ChatOverlay.RenameChat },
+            onShare = {
+                overlay = ChatOverlay.None
+                context.shareChat(
+                    title = state.title.ifBlank { toolLabel },
+                    messages = state.storedMessages,
+                )
+            },
+            onTextSizeChange = onTextSizeChange,
+            onDelete = { overlay = ChatOverlay.ConfirmDelete },
         )
+        if (overlay == ChatOverlay.RenameChat) {
+            RenameChatDialog(
+                initialTitle = state.title,
+                onSave = { title ->
+                    overlay = ChatOverlay.None
+                    onRename(title)
+                },
+                onDismiss = { overlay = ChatOverlay.None },
+            )
+        }
+        if (overlay == ChatOverlay.ConfirmDelete) {
+            ConfirmDialog(
+                icon = AppIcons.Trash,
+                title = stringResource(R.string.chat_delete_title),
+                body = stringResource(R.string.chat_delete_body),
+                stayLabel = stringResource(R.string.action_cancel),
+                confirmLabel = stringResource(R.string.chat_delete_confirm),
+                tone = ConfirmTone.Destructive,
+                onStay = { overlay = ChatOverlay.None },
+                onConfirm = {
+                    overlay = ChatOverlay.None
+                    onDeleteChat()
+                },
+            )
+        }
         VoiceInputPanel(
             state = state.voice,
             onDismiss = onVoiceCancelled,
@@ -443,6 +528,7 @@ private fun Composer(
     attaching: Boolean,
     onAttachmentRemoved: () -> Unit,
     onDraftChange: (String) -> Unit,
+    composerFocus: FocusRequester,
     onScan: () -> Unit,
     voiceInputEnabled: Boolean,
     onVoice: () -> Unit,
@@ -518,7 +604,9 @@ private fun Composer(
                     maxLines = ComposerMaxLines,
                     textStyle = MaterialTheme.typography.bodyLarge.copy(color = colors.textPrimary),
                     cursorBrush = SolidColor(colors.accent),
-                    modifier = Modifier.fillMaxWidth(),
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .focusRequester(composerFocus),
                 )
             }
             // Hidden rather than disabled: the Profile switch means "I don't dictate".
@@ -691,6 +779,23 @@ private fun ErrorBanner(@StringRes errorRes: Int?, onDismiss: () -> Unit) {
     }
 }
 
+/** Opens the system share sheet with the conversation as text. Nothing is sent until an app is chosen. */
+private fun Context.shareChat(title: String, messages: List<ChatMessage>) {
+    val text = ChatTranscript.format(
+        title = title,
+        messages = messages,
+        youLabel = getString(R.string.chat_share_you),
+        tutorLabel = getString(R.string.app_name),
+        attachedLabel = { fileName -> getString(R.string.chat_share_attached, fileName) },
+    )
+    val send = Intent(Intent.ACTION_SEND).apply {
+        type = "text/plain"
+        putExtra(Intent.EXTRA_SUBJECT, title)
+        putExtra(Intent.EXTRA_TEXT, text)
+    }
+    startActivity(Intent.createChooser(send, getString(R.string.chat_menu_share)))
+}
+
 @ScreenPreviews
 @Composable
 private fun ChatScreenPreview() {
@@ -708,7 +813,10 @@ private fun ChatScreenPreview() {
             onDraftChange = {},
             onSend = {},
             onSelectText = {},
-            onClearMessages = {},
+            onNewChat = {},
+            onRename = {},
+            onDeleteChat = {},
+            onTextSizeChange = {},
             onReadAloud = {},
             onErrorShown = {},
             onFilePicked = { _, _ -> },
@@ -741,7 +849,10 @@ private fun ChatLongDraftPreview() {
             onDraftChange = {},
             onSend = {},
             onSelectText = {},
-            onClearMessages = {},
+            onNewChat = {},
+            onRename = {},
+            onDeleteChat = {},
+            onTextSizeChange = {},
             onReadAloud = {},
             onErrorShown = {},
             onFilePicked = { _, _ -> },
@@ -767,7 +878,10 @@ private fun ChatEmptyPreview() {
             onDraftChange = {},
             onSend = {},
             onSelectText = {},
-            onClearMessages = {},
+            onNewChat = {},
+            onRename = {},
+            onDeleteChat = {},
+            onTextSizeChange = {},
             onReadAloud = {},
             onErrorShown = {},
             onFilePicked = { _, _ -> },
@@ -828,7 +942,18 @@ private fun ChatAnswerOptionsPreview() {
 private fun ChatOptionsMenuPreview() {
     AITutorTheme {
         Box(modifier = Modifier.fillMaxSize()) {
-            ChatOptionsMenu(visible = true, onDismiss = {}, onClearMessages = {})
+            ChatOptionsMenu(
+                visible = true,
+                onDismiss = {},
+                hasChat = true,
+                canStartNew = true,
+                textSize = ChatTextSize.Default,
+                onNewChat = {},
+                onRename = {},
+                onShare = {},
+                onTextSizeChange = {},
+                onDelete = {},
+            )
         }
     }
 }

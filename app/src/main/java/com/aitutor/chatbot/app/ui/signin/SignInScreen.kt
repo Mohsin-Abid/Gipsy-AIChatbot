@@ -1,5 +1,6 @@
 package com.aitutor.chatbot.app.ui.signin
 
+import androidx.annotation.StringRes
 import androidx.compose.foundation.Canvas
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
@@ -73,6 +74,7 @@ fun SignInScreen(
     onOpenPrivacy: () -> Unit,
     modifier: Modifier = Modifier,
     inProgress: Boolean = false,
+    @StringRes errorRes: Int? = null,
 ) {
     val colors = MaterialTheme.appColors
 
@@ -104,7 +106,22 @@ fun SignInScreen(
 
             Spacer(modifier = Modifier.weight(1f))
 
-            GoogleSignInButton(onClick = onContinueWithGoogle, enabled = !inProgress)
+            // Only a real failure shows here. Closing the account sheet is a choice, so it leaves no message.
+            if (errorRes != null) {
+                Text(
+                    text = stringResource(errorRes),
+                    style = MaterialTheme.typography.labelLarge.copy(fontWeight = FontWeight.Medium),
+                    color = colors.danger,
+                    textAlign = TextAlign.Center,
+                    modifier = Modifier.fillMaxWidth().padding(bottom = Dimens.spaceMd),
+                )
+            }
+
+            GoogleSignInButton(
+                onClick = onContinueWithGoogle,
+                enabled = !inProgress,
+                inProgress = inProgress,
+            )
 
             Box(
                 modifier = Modifier
@@ -300,6 +317,7 @@ private fun GoogleSignInButton(
     onClick: () -> Unit,
     modifier: Modifier = Modifier,
     enabled: Boolean = true,
+    inProgress: Boolean = false,
 ) {
     val isDark = MaterialTheme.appColors.isDark
     Row(
@@ -322,7 +340,8 @@ private fun GoogleSignInButton(
         )
         Spacer(modifier = Modifier.width(Dimens.spaceMd))
         Text(
-            text = stringResource(R.string.signin_google),
+            // No spinner (animations are off app-wide), so the label itself says something is happening.
+            text = stringResource(if (inProgress) R.string.signin_in_progress else R.string.signin_google),
             style = MaterialTheme.typography.titleMedium.copy(fontWeight = FontWeight.SemiBold),
             color = GoogleBrand.label(isDark),
         )

@@ -50,6 +50,7 @@ import com.aitutor.chatbot.app.ui.main.SectionTitleWithCount
 import com.aitutor.chatbot.app.ui.main.TabBottomInset
 import com.aitutor.chatbot.app.ui.main.TabHero
 import com.aitutor.chatbot.app.ui.main.TabHeroTitle
+import com.aitutor.chatbot.app.ui.main.UpgradeDiamondButton
 import com.aitutor.chatbot.app.ui.main.TabSearchBar
 import com.aitutor.chatbot.app.ui.main.TabSidePadding
 import com.aitutor.chatbot.app.ui.main.dividedRows
@@ -76,7 +77,9 @@ private val FilterCategories: List<ToolCategory?> = listOf(null) + ToolCategory.
 @Composable
 fun ToolsScreen(
     onToolClick: (StudyTool) -> Unit,
+    onSeeProPlans: () -> Unit,
     modifier: Modifier = Modifier,
+    showUpgrade: Boolean = false,
 ) {
     val colors = MaterialTheme.appColors
     var filterIndex by rememberSaveable { mutableIntStateOf(0) }
@@ -99,6 +102,11 @@ fun ToolsScreen(
             TabHeroTitle(
                 title = stringResource(R.string.tools_title),
                 subtitle = stringResource(R.string.tools_subtitle, StudyTool.entries.size),
+                action = if (showUpgrade) {
+                    { UpgradeDiamondButton(onClick = onSeeProPlans) }
+                } else {
+                    null
+                },
             )
             TabSearchBar(
                 hint = stringResource(R.string.tools_search_hint),
@@ -361,5 +369,5 @@ private fun ToolRow(tool: StudyTool, onClick: () -> Unit) {
 @TallScreenPreviews
 @Composable
 private fun ToolsScreenPreview() {
-    AITutorTheme { ToolsScreen(onToolClick = {}) }
+    AITutorTheme { ToolsScreen(onToolClick = {}, onSeeProPlans = {}, showUpgrade = true) }
 }

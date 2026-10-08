@@ -145,19 +145,6 @@ class ChatRepository(
 
     suspend fun rename(chatId: Long, title: String) = chatDao.rename(chatId, title)
 
-    /**
-     * Deletes a chat's messages, and the files they attached.
-     *
-     * The rows go either way; the copies on disk would not, and an attachment whose message is gone
-     * is unreachable — nothing would ever delete it. The files go first, because a failure there
-     * leaves rows that still point at them rather than orphans nothing can find.
-     */
-    suspend fun clearMessages(chatId: Long) {
-        deleteAttachmentFiles(chatId)
-        messageDao.clearChat(chatId)
-        chatDao.touch(chatId, now())
-    }
-
     /** Deletes a chat. Its messages cascade; its attachment files are removed here. */
     suspend fun delete(chatId: Long) {
         deleteAttachmentFiles(chatId)

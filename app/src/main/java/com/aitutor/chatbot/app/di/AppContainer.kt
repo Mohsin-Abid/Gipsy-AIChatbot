@@ -4,6 +4,7 @@ import android.content.Context
 import com.aitutor.chatbot.app.data.api.TutorApiClient
 import com.aitutor.chatbot.app.data.api.UnconfiguredTutorApiClient
 import com.aitutor.chatbot.app.data.attachment.AttachmentStore
+import com.aitutor.chatbot.app.data.auth.AuthRepository
 import com.aitutor.chatbot.app.data.local.AppDatabase
 import com.aitutor.chatbot.app.data.prefs.UserPreferencesRepository
 import com.aitutor.chatbot.app.data.repository.ChatRepository
@@ -31,6 +32,9 @@ interface AppContainer {
      * paying that each time a chat opens would be audible as a delay before the first word.
      */
     val speaker: Speaker
+
+    /** Accounts. One instance, because it wraps the one signed-in user Firebase keeps for the app. */
+    val auth: AuthRepository
 }
 
 class DefaultAppContainer(context: Context) : AppContainer {
@@ -54,6 +58,8 @@ class DefaultAppContainer(context: Context) : AppContainer {
     override val voice: VoiceRecognizer by lazy { VoiceRecognizer(appContext) }
 
     override val speaker: Speaker by lazy { Speaker(appContext) }
+
+    override val auth: AuthRepository by lazy { AuthRepository(appContext) }
 
     override val chats: ChatRepository by lazy {
         ChatRepository(

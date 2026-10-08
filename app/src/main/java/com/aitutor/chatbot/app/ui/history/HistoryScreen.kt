@@ -45,6 +45,7 @@ import com.aitutor.chatbot.app.ui.main.SectionOverline
 import com.aitutor.chatbot.app.ui.main.TabBottomInset
 import com.aitutor.chatbot.app.ui.main.TabHero
 import com.aitutor.chatbot.app.ui.main.TabHeroTitle
+import com.aitutor.chatbot.app.ui.main.UpgradeDiamondButton
 import com.aitutor.chatbot.app.ui.main.TabSearchBar
 import com.aitutor.chatbot.app.ui.main.TabSidePadding
 import com.aitutor.chatbot.app.ui.theme.AITutorTheme
@@ -67,7 +68,9 @@ fun HistoryScreen(
     state: HistoryUiState,
     onFilterChange: (HistoryFilter) -> Unit,
     onEntryClick: (HistoryEntry) -> Unit,
+    onSeeProPlans: () -> Unit,
     modifier: Modifier = Modifier,
+    showUpgrade: Boolean = false,
 ) {
     val colors = MaterialTheme.appColors
 
@@ -89,6 +92,11 @@ fun HistoryScreen(
             TabHeroTitle(
                 title = stringResource(R.string.history_title),
                 subtitle = stringResource(R.string.history_subtitle),
+                action = if (showUpgrade) {
+                    { UpgradeDiamondButton(onClick = onSeeProPlans) }
+                } else {
+                    null
+                },
             )
         }
 
@@ -286,6 +294,8 @@ private fun HistoryScreenPreview() {
         HistoryScreen(
             state = HistoryUiState(entries = SampleContent.history(), loading = false),
             onFilterChange = {},
+            onSeeProPlans = {},
+            showUpgrade = true,
             onEntryClick = {},
         )
     }
@@ -298,6 +308,8 @@ private fun HistoryEmptyPreview() {
         HistoryScreen(
             state = HistoryUiState(entries = emptyList(), loading = false),
             onFilterChange = {},
+            onSeeProPlans = {},
+            showUpgrade = true,
             onEntryClick = {},
         )
     }

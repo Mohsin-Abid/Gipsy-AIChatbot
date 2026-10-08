@@ -38,6 +38,7 @@ import androidx.compose.ui.graphics.StrokeCap
 import androidx.compose.ui.graphics.drawscope.Stroke
 import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.res.stringResource
+import androidx.compose.ui.semantics.Role
 import androidx.compose.ui.semantics.contentDescription
 import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.text.font.FontWeight
@@ -48,11 +49,13 @@ import androidx.compose.ui.unit.sp
 import com.aitutor.chatbot.app.R
 import com.aitutor.chatbot.app.domain.model.HistoryEntry
 import com.aitutor.chatbot.app.domain.model.StudyTool
+import com.aitutor.chatbot.app.navigation.ChatLaunch
+import com.aitutor.chatbot.app.navigation.ChatStart
 import com.aitutor.chatbot.app.ui.icons.AppIcons
 import com.aitutor.chatbot.app.ui.main.TabBottomInset
+import com.aitutor.chatbot.app.ui.main.UpgradeDiamondButton
 import com.aitutor.chatbot.app.ui.theme.AITutorTheme
 import com.aitutor.chatbot.app.ui.theme.AppShapes
-import com.aitutor.chatbot.app.ui.theme.Coral
 import com.aitutor.chatbot.app.ui.theme.Dimens
 import com.aitutor.chatbot.app.ui.theme.OnHero
 import com.aitutor.chatbot.app.ui.theme.OverlineStyle
@@ -76,18 +79,21 @@ private val RowShape = RoundedCornerShape(20.dp)
 
 /**
  * The dashboard. An accent hero carrying the composer, then a "continue" card that overlaps its
- * lower edge, then the tool grid, challenge and recent activity.
+ * lower edge, then the tool grid and recent activity.
  */
 @Composable
 fun HomeScreen(
     userName: String,
     activity: List<HistoryEntry>,
     onToolClick: (StudyTool) -> Unit,
+    onLaunchChat: (ChatLaunch) -> Unit,
     onOpenChat: (HistoryEntry) -> Unit,
     onSeeAllTools: () -> Unit,
     onViewHistory: () -> Unit,
     onOpenProfile: () -> Unit,
+    onSeeProPlans: () -> Unit,
     modifier: Modifier = Modifier,
+    showUpgrade: Boolean = false,
 ) {
     val colors = MaterialTheme.appColors
     Column(
@@ -102,7 +108,13 @@ fun HomeScreen(
     // The accent hero runs under the status bar.
     SystemBarIcons(lightStatusBarIcons = true)
 
-        HomeHero(userName = userName, onOpenProfile = onOpenProfile)
+        HomeHero(
+            userName = userName,
+            onOpenProfile = onOpenProfile,
+            showUpgrade = showUpgrade,
+            onSeeProPlans = onSeeProPlans,
+            onLaunchChat = onLaunchChat,
+        )
 
         Box(
             modifier = Modifier
@@ -123,7 +135,6 @@ fun HomeScreen(
             verticalArrangement = Arrangement.spacedBy(28.dp),
         ) {
             ToolsSection(onToolClick = onToolClick, onSeeAll = onSeeAllTools)
-            DailyChallengeCard()
             ActivitySection(
                 activity = activity,
                 onEntryClick = onOpenChat,
@@ -136,7 +147,14 @@ fun HomeScreen(
 // ---- Hero ----
 
 @Composable
-private fun HomeHero(userName: String, onOpenProfile: () -> Unit, modifier: Modifier = Modifier) {
+private fun HomeHero(
+    userName: String,
+    onOpenProfile: () -> Unit,
+    showUpgrade: Boolean,
+    onSeeProPlans: () -> Unit,
+    onLaunchChat: (ChatLaunch) -> Unit,
+    modifier: Modifier = Modifier,
+) {
     val colors = MaterialTheme.appColors
     Box(
         modifier = modifier
@@ -175,7 +193,12 @@ private fun HomeHero(userName: String, onOpenProfile: () -> Unit, modifier: Modi
                 .statusBarsPadding()
                 .padding(start = SidePadding, end = SidePadding, top = 24.dp, bottom = 68.dp),
         ) {
-            HeroHeader(userName = userName, onOpenProfile = onOpenProfile)
+            HeroHeader(
+                userName = userName,
+                onOpenProfile = onOpenProfile,
+                showUpgrade = showUpgrade,
+                onSeeProPlans = onSeeProPlans,
+            )
 
             Box(modifier = Modifier.padding(top = 28.dp)) {
                 Column {
@@ -186,17 +209,27 @@ private fun HomeHero(userName: String, onOpenProfile: () -> Unit, modifier: Modi
                         color = Color.White,
                         modifier = Modifier.padding(top = Dimens.spaceMd),
                     )
-                    AskBar(modifier = Modifier.padding(top = 20.dp))
+                    // The bar is a doorway, not a field: typing happens in the chat, where the
+                    // keyboard, attachments and dictation already are.
+                    AskBar(
+                        onClick = { onLaunchChat(ChatLaunch(StudyTool.Chatbot, ChatStart.Compose)) },
+                        modifier = Modifier.padding(top = 20.dp),
+                    )
                 }
             }
 
-            SuggestionChips(modifier = Modifier.padding(top = Dimens.spaceLg))
+            SuggestionChips(onLaunchChat = onLaunchChat, modifier = Modifier.padding(top = Dimens.spaceLg))
         }
     }
 }
 
 @Composable
-private fun HeroHeader(userName: String, onOpenProfile: () -> Unit) {
+private fun HeroHeader(
+    userName: String,
+    onOpenProfile: () -> Unit,
+    showUpgrade: Boolean,
+    onSeeProPlans: () -> Unit,
+) {
     val colors = MaterialTheme.appColors
     val profileLabel = stringResource(R.string.cd_profile)
     val initials = userName.split(" ").mapNotNull { it.firstOrNull() }.take(2)
@@ -244,41 +277,7 @@ private fun HeroHeader(userName: String, onOpenProfile: () -> Unit) {
             }
         }
 
-        NotificationButton()
-    }
-}
-
-@Composable
-private fun NotificationButton() {
-    val colors = MaterialTheme.appColors
-    Box(modifier = Modifier.size(44.dp)) {
-        Box(
-            modifier = Modifier
-                .size(44.dp)
-                .clip(AppShapes.Pill)
-                .background(OnHero.FillSoft)
-                .border(1.dp, OnHero.StrokeSoft, AppShapes.Pill)
-                .clickable { },
-            contentAlignment = Alignment.Center,
-        ) {
-            Icon(
-                imageVector = AppIcons.Bell,
-                contentDescription = stringResource(R.string.cd_notifications),
-                tint = Color.White,
-                modifier = Modifier.size(20.dp),
-            )
-        }
-        Box(
-            modifier = Modifier
-                .align(Alignment.TopEnd)
-                .offset(x = (-9).dp, y = 8.dp)
-                .size(12.dp)
-                .clip(AppShapes.Pill)
-                .background(colors.hero),
-            contentAlignment = Alignment.Center,
-        ) {
-            Box(modifier = Modifier.size(8.dp).clip(AppShapes.Pill).background(Coral))
-        }
+        if (showUpgrade) UpgradeDiamondButton(onClick = onSeeProPlans)
     }
 }
 
@@ -307,7 +306,7 @@ private fun AssistantBadge() {
 }
 
 @Composable
-private fun AskBar(modifier: Modifier = Modifier) {
+private fun AskBar(onClick: () -> Unit, modifier: Modifier = Modifier) {
     val colors = MaterialTheme.appColors
     Row(
         modifier = modifier
@@ -315,6 +314,7 @@ private fun AskBar(modifier: Modifier = Modifier) {
             .shadow(16.dp, AppShapes.Pill, ambientColor = Color(0xFF080C28), spotColor = Color(0xFF080C28))
             .clip(AppShapes.Pill)
             .background(colors.surface)
+            .clickable(role = Role.Button, onClick = onClick)
             .height(60.dp)
             .padding(start = 18.dp, end = Dimens.spaceSm),
         verticalAlignment = Alignment.CenterVertically,
@@ -340,7 +340,7 @@ private fun AskBar(modifier: Modifier = Modifier) {
 //        )
         CircleAction(
             icon = AppIcons.SendUp,
-            contentDescription = stringResource(R.string.cd_send_question),
+            contentDescription = null,
             background = colors.accent,
             tint = colors.onAccent,
             iconSize = 18.dp,
@@ -351,7 +351,7 @@ private fun AskBar(modifier: Modifier = Modifier) {
 @Composable
 private fun CircleAction(
     icon: ImageVector,
-    contentDescription: String,
+    contentDescription: String?,
     background: Color,
     tint: Color,
     iconSize: androidx.compose.ui.unit.Dp = 20.dp,
@@ -360,8 +360,7 @@ private fun CircleAction(
         modifier = Modifier
             .size(44.dp)
             .clip(AppShapes.Pill)
-            .background(background)
-            .clickable { },
+            .background(background),
         contentAlignment = Alignment.Center,
     ) {
         Icon(imageVector = icon, contentDescription = contentDescription, tint = tint, modifier = Modifier.size(iconSize))
@@ -369,28 +368,44 @@ private fun CircleAction(
 }
 
 @Composable
-private fun SuggestionChips(modifier: Modifier = Modifier) {
+private fun SuggestionChips(onLaunchChat: (ChatLaunch) -> Unit, modifier: Modifier = Modifier) {
+    val newton = stringResource(R.string.home_chip_newton)
+    val quiz = stringResource(R.string.home_chip_quiz)
     Row(
         modifier = modifier
             .fillMaxWidth()
             .horizontalScroll(rememberScrollState()),
         horizontalArrangement = Arrangement.spacedBy(Dimens.spaceSm),
     ) {
-        HeroChip(stringResource(R.string.home_chip_scan), AppIcons.ScanFrame)
-        HeroChip(stringResource(R.string.home_chip_newton), null)
-        HeroChip(stringResource(R.string.home_chip_quiz), null)
+        // Each chip names the tool that suits it. A question chip puts its own words in the composer
+        // for the student to send; the scan chip opens the scan sheet.
+        HeroChip(
+            label = stringResource(R.string.home_chip_scan),
+            icon = AppIcons.ScanFrame,
+            onClick = { onLaunchChat(ChatLaunch(StudyTool.HomeworkSolver, ChatStart.Scan)) },
+        )
+        HeroChip(
+            label = newton,
+            icon = null,
+            onClick = { onLaunchChat(ChatLaunch(StudyTool.ConceptExplainer, ChatStart.Compose, draft = newton)) },
+        )
+        HeroChip(
+            label = quiz,
+            icon = null,
+            onClick = { onLaunchChat(ChatLaunch(StudyTool.AiTutor, ChatStart.Compose, draft = quiz)) },
+        )
     }
 }
 
 @Composable
-private fun HeroChip(label: String, icon: ImageVector?) {
+private fun HeroChip(label: String, icon: ImageVector?, onClick: () -> Unit) {
     Row(
         modifier = Modifier
             .height(36.dp)
             .clip(AppShapes.Pill)
             .background(OnHero.FillSoft)
             .border(1.dp, OnHero.StrokeSoft, AppShapes.Pill)
-            .clickable { }
+            .clickable(role = Role.Button, onClick = onClick)
             .padding(horizontal = Dimens.spaceLg),
         verticalAlignment = Alignment.CenterVertically,
         horizontalArrangement = Arrangement.spacedBy(7.dp),
@@ -727,78 +742,6 @@ private fun ToolGridTile(tool: StudyTool, onClick: () -> Unit, modifier: Modifie
     }
 }
 
-// ---- Daily challenge ----
-
-@Composable
-private fun DailyChallengeCard() {
-    val colors = MaterialTheme.appColors
-    Box(
-        modifier = Modifier
-            .fillMaxWidth()
-            .clip(CardShape)
-            .background(colors.accentTint)
-            .border(1.dp, colors.accentRing, CardShape),
-    ) {
-        Canvas(modifier = Modifier.matchParentSize()) {
-            drawCircle(
-                color = colors.accentRing.copy(alpha = 0.6f),
-                radius = 65.dp.toPx(),
-                center = Offset(size.width + 35.dp.toPx(), 15.dp.toPx()),
-            )
-        }
-        Row(
-            modifier = Modifier.fillMaxWidth().padding(16.dp),
-            verticalAlignment = Alignment.CenterVertically,
-            horizontalArrangement = Arrangement.spacedBy(Dimens.spaceLg),
-        ) {
-            Box(
-                modifier = Modifier
-                    .size(48.dp)
-                    .clip(RoundedCornerShape(16.dp))
-                    .background(colors.accent),
-                contentAlignment = Alignment.Center,
-            ) {
-                Icon(
-                    imageVector = AppIcons.Target,
-                    contentDescription = null,
-                    tint = colors.onAccent,
-                    modifier = Modifier.size(22.dp),
-                )
-            }
-            Column(
-                modifier = Modifier.weight(1f),
-                verticalArrangement = Arrangement.spacedBy(2.dp),
-            ) {
-                Text(
-                    text = stringResource(R.string.home_challenge_label).uppercase(),
-                    style = OverlineStyle.copy(letterSpacing = 0.77.sp),
-                    color = colors.accentText,
-                )
-                Text(
-                    text = stringResource(R.string.home_challenge_title),
-                    style = MaterialTheme.typography.titleSmall.copy(fontSize = 15.sp),
-                    color = colors.textPrimary,
-                )
-                Text(
-                    text = stringResource(R.string.home_challenge_detail),
-                    style = MaterialTheme.typography.labelMedium.copy(fontWeight = FontWeight.Normal, lineHeight = 17.sp),
-                    color = colors.textSecondary,
-                )
-            }
-            Text(
-                text = stringResource(R.string.home_challenge_start),
-                style = MaterialTheme.typography.bodyMedium.copy(fontWeight = FontWeight.SemiBold),
-                color = colors.onAccent,
-                modifier = Modifier
-                    .clip(AppShapes.Pill)
-                    .background(colors.accent)
-                    .clickable { }
-                    .padding(horizontal = 18.dp, vertical = 10.dp),
-            )
-        }
-    }
-}
-
 // ---- Recent activity ----
 
 @Composable
@@ -928,10 +871,13 @@ private fun HomeScreenPreview() {
             userName = "Alex Morgan",
             activity = SampleContent.history().take(3),
             onToolClick = {},
+            onLaunchChat = {},
             onOpenChat = {},
             onSeeAllTools = {},
             onViewHistory = {},
             onOpenProfile = {},
+            onSeeProPlans = {},
+            showUpgrade = true,
         )
     }
 }
@@ -944,10 +890,13 @@ private fun HomeScreenEmptyPreview() {
             userName = "Alex Morgan",
             activity = emptyList(),
             onToolClick = {},
+            onLaunchChat = {},
             onOpenChat = {},
             onSeeAllTools = {},
             onViewHistory = {},
             onOpenProfile = {},
+            onSeeProPlans = {},
+            showUpgrade = true,
         )
     }
 }

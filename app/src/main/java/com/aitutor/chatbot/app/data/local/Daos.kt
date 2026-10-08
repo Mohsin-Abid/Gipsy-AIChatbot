@@ -49,7 +49,4 @@ interface MessageDao {
 
     @Query("SELECT * FROM messages WHERE chatId = :chatId ORDER BY createdAt ASC, id ASC")
     suspend fun forChat(chatId: Long): List<MessageEntity>
-
-    @Query("DELETE FROM messages WHERE chatId = :chatId")
-    suspend fun clearChat(chatId: Long)
 }

@@ -25,6 +25,9 @@ import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.setValue
+import androidx.compose.runtime.saveable.rememberSaveable
+import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.getValue
 import androidx.compose.ui.Alignment
@@ -45,12 +48,15 @@ import com.aitutor.chatbot.app.domain.model.AppLanguage
 import com.aitutor.chatbot.app.domain.model.StudentProfile
 import com.aitutor.chatbot.app.domain.model.ThemeMode
 import com.aitutor.chatbot.app.ui.components.AppSwitch
+import com.aitutor.chatbot.app.ui.components.ConfirmDialog
+import com.aitutor.chatbot.app.ui.components.ConfirmTone
 import com.aitutor.chatbot.app.ui.icons.AppIcons
 import com.aitutor.chatbot.app.ui.main.GlyphTile
 import com.aitutor.chatbot.app.ui.main.ListPanel
 import com.aitutor.chatbot.app.ui.main.SectionOverline
 import com.aitutor.chatbot.app.ui.main.TabBottomInset
 import com.aitutor.chatbot.app.ui.main.TabHero
+import com.aitutor.chatbot.app.ui.main.UpgradeDiamondButton
 import com.aitutor.chatbot.app.ui.main.TabSidePadding
 import com.aitutor.chatbot.app.ui.main.PanelDivider
 import com.aitutor.chatbot.app.ui.theme.AITutorTheme
@@ -92,9 +98,12 @@ fun ProfileScreen(
     onEditGoals: () -> Unit,
     onOpenLanguage: () -> Unit,
     onSeeProPlans: () -> Unit,
+    onLogOut: () -> Unit,
     modifier: Modifier = Modifier,
+    showUpgrade: Boolean = false,
 ) {
     val colors = MaterialTheme.appColors
+    var confirmingLogOut by rememberSaveable { mutableStateOf(false) }
     Column(
         modifier = modifier
             .fillMaxSize()
@@ -107,7 +116,22 @@ fun ProfileScreen(
     // The accent hero runs under the status bar.
     SystemBarIcons(lightStatusBarIcons = true)
 
-        ProfileHero(profile = profile, onEditName = onEditName)
+        if (confirmingLogOut) {
+            LogOutConfirmation(
+                onConfirm = {
+                    confirmingLogOut = false
+                    onLogOut()
+                },
+                onDismiss = { confirmingLogOut = false },
+            )
+        }
+
+        ProfileHero(
+            profile = profile,
+            onEditName = onEditName,
+            showUpgrade = showUpgrade,
+            onSeeProPlans = onSeeProPlans,
+        )
 
         Box(
             modifier = Modifier
@@ -205,7 +229,7 @@ fun ProfileScreen(
             }
 
             Column(verticalArrangement = Arrangement.spacedBy(Dimens.spaceMd)) {
-                LogOutButton(onClick = {})
+                LogOutButton(onClick = { confirmingLogOut = true })
                 Text(
                     text = stringResource(R.string.profile_version, "1.0.0"),
                     style = MaterialTheme.typography.labelMedium.copy(
@@ -221,12 +245,32 @@ fun ProfileScreen(
     }
 }
 
+/**
+ * Asks before signing out. The log-out button is large, red and at the very bottom of a long scroll,
+ * which is exactly where a thumb lands by accident, and signing in again is a whole round trip.
+ */
+@Composable
+private fun LogOutConfirmation(onConfirm: () -> Unit, onDismiss: () -> Unit) {
+    ConfirmDialog(
+        icon = AppIcons.Logout,
+        title = stringResource(R.string.profile_logout_title),
+        body = stringResource(R.string.profile_logout_body),
+        stayLabel = stringResource(R.string.action_cancel),
+        confirmLabel = stringResource(R.string.profile_log_out),
+        tone = ConfirmTone.Destructive,
+        onStay = onDismiss,
+        onConfirm = onConfirm,
+    )
+}
+
 // ---- Hero ----
 
 @Composable
 private fun ProfileHero(
     profile: StudentProfile,
     onEditName: () -> Unit,
+    showUpgrade: Boolean,
+    onSeeProPlans: () -> Unit,
     modifier: Modifier = Modifier,
 ) {
     val colors = MaterialTheme.appColors
@@ -235,11 +279,21 @@ private fun ProfileHero(
     // The upgrade card below overlaps this panel by 48dp, so the bottom padding is that overlap plus
     // the room that keeps the plan badge from touching the card.
     TabHero(modifier = modifier, bottomPadding = 76.dp) {
-        Text(
-            text = stringResource(R.string.nav_profile),
-            style = MaterialTheme.typography.headlineSmall,
-            color = Color.White,
-        )
+        Row(
+            // As tall as the diamond, whether or not it is there. Without a fixed height the row is only
+            // as tall as its title for a subscriber, and the avatar below sits higher for them than for
+            // everyone else.
+            modifier = Modifier.fillMaxWidth().height(44.dp),
+            verticalAlignment = Alignment.CenterVertically,
+            horizontalArrangement = Arrangement.SpaceBetween,
+        ) {
+            Text(
+                text = stringResource(R.string.nav_profile),
+                style = MaterialTheme.typography.headlineSmall,
+                color = Color.White,
+            )
+            if (showUpgrade) UpgradeDiamondButton(onClick = onSeeProPlans)
+        }
 
         Box {
             Column(
@@ -713,6 +767,8 @@ private fun ProfileScreenPreview() {
             onEditGoals = {},
             onOpenLanguage = {},
             onSeeProPlans = {},
+            onLogOut = {},
+            showUpgrade = true,
         )
     }
 }

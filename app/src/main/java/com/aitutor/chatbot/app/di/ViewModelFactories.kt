@@ -10,6 +10,7 @@ import com.aitutor.chatbot.app.ui.chat.ChatViewModel
 import com.aitutor.chatbot.app.ui.history.HistoryViewModel
 import com.aitutor.chatbot.app.ui.home.HomeViewModel
 import com.aitutor.chatbot.app.ui.settings.SettingsViewModel
+import com.aitutor.chatbot.app.ui.signin.AuthViewModel
 
 /** The container, reached from the `Application` the ViewModel was created under. */
 private fun CreationExtras.container(): AppContainer =
@@ -24,6 +25,10 @@ private fun CreationExtras.container(): AppContainer =
 object AppViewModelFactory {
     val settings = viewModelFactory {
         initializer { SettingsViewModel(container().preferences) }
+    }
+
+    val auth = viewModelFactory {
+        initializer { AuthViewModel(container().auth) }
     }
 
     val home = viewModelFactory {

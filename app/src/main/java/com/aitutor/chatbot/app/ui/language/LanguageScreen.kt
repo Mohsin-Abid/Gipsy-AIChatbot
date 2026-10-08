@@ -376,30 +376,30 @@ private fun BottomBar(
             .padding(start = 20.dp, end = 20.dp, top = 44.dp, bottom = 28.dp),
         verticalArrangement = Arrangement.spacedBy(Dimens.spaceMd),
     ) {
-        Row(
-            modifier = Modifier.fillMaxWidth(),
-            horizontalArrangement = Arrangement.Center,
-            verticalAlignment = Alignment.CenterVertically,
-        ) {
-            Icon(
-                imageVector = AppIcons.Spark,
-                contentDescription = null,
-                tint = colors.accentText,
-                modifier = Modifier.size(13.dp),
-            )
-            Text(
-                text = buildAnnotatedString {
-                    append(stringResource(R.string.language_answers_in))
-                    append(" ")
-                    withStyle(SpanStyle(fontWeight = FontWeight.Bold, color = colors.textPrimary)) {
-                        append(stringResource(selected.englishNameRes))
-                    }
-                },
-                style = MaterialTheme.typography.labelMedium.copy(fontWeight = FontWeight.Normal),
-                color = colors.textSecondary,
-                modifier = Modifier.padding(start = Dimens.spaceXs),
-            )
-        }
+//        Row(
+//            modifier = Modifier.fillMaxWidth(),
+//            horizontalArrangement = Arrangement.Center,
+//            verticalAlignment = Alignment.CenterVertically,
+//        ) {
+//            Icon(
+//                imageVector = AppIcons.Spark,
+//                contentDescription = null,
+//                tint = colors.accentText,
+//                modifier = Modifier.size(13.dp),
+//            )
+//            Text(
+//                text = buildAnnotatedString {
+//                    append(stringResource(R.string.language_answers_in))
+//                    append(" ")
+//                    withStyle(SpanStyle(fontWeight = FontWeight.Bold, color = colors.textPrimary)) {
+//                        append(stringResource(selected.englishNameRes))
+//                    }
+//                },
+//                style = MaterialTheme.typography.labelMedium.copy(fontWeight = FontWeight.Normal),
+//                color = colors.textSecondary,
+//                modifier = Modifier.padding(start = Dimens.spaceXs),
+//            )
+//        }
         PrimaryCta(text = ctaLabel, onClick = onContinue)
     }
 }

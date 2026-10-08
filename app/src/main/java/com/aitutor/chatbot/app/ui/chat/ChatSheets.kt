@@ -20,9 +20,13 @@ import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.alpha
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.res.stringResource
+import androidx.compose.ui.semantics.Role
+import androidx.compose.ui.semantics.contentDescription
+import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.text.style.TextOverflow
@@ -30,6 +34,7 @@ import androidx.compose.ui.unit.TextUnit
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.aitutor.chatbot.app.R
+import com.aitutor.chatbot.app.domain.model.ChatTextSize
 import com.aitutor.chatbot.app.domain.model.ScanSource
 import com.aitutor.chatbot.app.domain.model.StudyTool
 import com.aitutor.chatbot.app.ui.components.AnchoredMenu
@@ -476,26 +481,45 @@ private fun SheetRowDivider() {
     )
 }
 
-/** The header's own menu: what can be done to the whole conversation. */
+/**
+ * The header's own menu: what can be done to the whole conversation.
+ *
+ * Rename, share and delete act on a saved conversation, so they are greyed out while the thread is
+ * still empty; so is "New chat", which would only open another empty one. It is greyed out while an
+ * answer is on its way too, because starting a new chat leaves this one and would cut that off.
+ * Changing the text size leaves the menu open, so the effect can be seen behind it and tapped again.
+ */
 @Composable
 fun BoxScope.ChatOptionsMenu(
     visible: Boolean,
     onDismiss: () -> Unit,
-    onClearMessages: () -> Unit,
+    hasChat: Boolean,
+    canStartNew: Boolean,
+    textSize: ChatTextSize,
+    onNewChat: () -> Unit,
+    onRename: () -> Unit,
+    onShare: () -> Unit,
+    onTextSizeChange: (ChatTextSize) -> Unit,
+    onDelete: () -> Unit,
 ) {
     AnchoredMenu(
         visible = visible,
         onDismiss = onDismiss,
         modifier = Modifier.padding(top = 60.dp, end = Dimens.spaceMd),
     ) {
-        MenuItem(AppIcons.Plus, stringResource(R.string.chat_menu_new))
-        MenuItem(AppIcons.Pencil, stringResource(R.string.chat_menu_rename))
-        MenuItem(AppIcons.Share, stringResource(R.string.chat_menu_share))
+        MenuItem(AppIcons.Plus, stringResource(R.string.chat_menu_new), enabled = canStartNew, onClick = onNewChat)
+        MenuItem(AppIcons.Pencil, stringResource(R.string.chat_menu_rename), enabled = hasChat, onClick = onRename)
+        MenuItem(AppIcons.Share, stringResource(R.string.chat_menu_share), enabled = hasChat, onClick = onShare)
         MenuDivider()
-        TextSizeRow()
+        TextSizeRow(current = textSize, onChange = onTextSizeChange)
         MenuDivider()
-        MenuItem(AppIcons.Eraser, stringResource(R.string.chat_menu_clear), onClick = onClearMessages)
-        MenuItem(AppIcons.Trash, stringResource(R.string.chat_menu_delete), destructive = true)
+        MenuItem(
+            icon = AppIcons.Trash,
+            label = stringResource(R.string.chat_menu_delete),
+            destructive = true,
+            enabled = hasChat,
+            onClick = onDelete,
+        )
     }
 }
 
@@ -504,6 +528,7 @@ private fun MenuItem(
     icon: ImageVector,
     label: String,
     destructive: Boolean = false,
+    enabled: Boolean = true,
     onClick: () -> Unit = {},
 ) {
     val colors = MaterialTheme.appColors
@@ -512,7 +537,8 @@ private fun MenuItem(
         modifier = Modifier
             .fillMaxWidth()
             .height(48.dp)
-            .clickable(onClick = onClick)
+            .clickable(enabled = enabled, role = Role.Button, onClick = onClick)
+            .alpha(if (enabled) 1f else DisabledAlpha)
             .padding(horizontal = Dimens.spaceLg),
         verticalAlignment = Alignment.CenterVertically,
         horizontalArrangement = Arrangement.spacedBy(Dimens.spaceMd),
@@ -544,7 +570,7 @@ private fun MenuDivider() {
 
 /** Text size is a segmented pair rather than a slider, so it stays inside the menu's width. */
 @Composable
-private fun TextSizeRow() {
+private fun TextSizeRow(current: ChatTextSize, onChange: (ChatTextSize) -> Unit) {
     val colors = MaterialTheme.appColors
     Row(
         modifier = Modifier
@@ -573,14 +599,33 @@ private fun TextSizeRow() {
                 .padding(3.dp),
             horizontalArrangement = Arrangement.spacedBy(Dimens.spaceXxs),
         ) {
-            TextSizeButton(stringResource(R.string.chat_text_smaller), 12.sp)
-            TextSizeButton(stringResource(R.string.chat_text_larger), 15.sp)
+            TextSizeButton(
+                label = stringResource(R.string.chat_text_smaller),
+                description = stringResource(R.string.cd_text_smaller),
+                fontSize = 12.sp,
+                target = current.smaller,
+                onChange = onChange,
+            )
+            TextSizeButton(
+                label = stringResource(R.string.chat_text_larger),
+                description = stringResource(R.string.cd_text_larger),
+                fontSize = 15.sp,
+                target = current.larger,
+                onChange = onChange,
+            )
         }
     }
 }
 
+/** One step of the pair. With nowhere further to go ([target] is null) it is greyed out and inert. */
 @Composable
-private fun TextSizeButton(label: String, fontSize: TextUnit) {
+private fun TextSizeButton(
+    label: String,
+    description: String,
+    fontSize: TextUnit,
+    target: ChatTextSize?,
+    onChange: (ChatTextSize) -> Unit,
+) {
     val colors = MaterialTheme.appColors
     Box(
         modifier = Modifier
@@ -588,7 +633,9 @@ private fun TextSizeButton(label: String, fontSize: TextUnit) {
             .height(32.dp)
             .clip(RoundedCornerShape(10.dp))
             .background(colors.surfaceRaised)
-            .clickable { },
+            .clickable(enabled = target != null, role = Role.Button) { target?.let(onChange) }
+            .semantics { contentDescription = description }
+            .alpha(if (target != null) 1f else DisabledAlpha),
         contentAlignment = Alignment.Center,
     ) {
         Text(
@@ -601,6 +648,8 @@ private fun TextSizeButton(label: String, fontSize: TextUnit) {
         )
     }
 }
+
+private const val DisabledAlpha = 0.38f
 
 @Composable
 private fun SheetCloseButton(onClick: () -> Unit) {

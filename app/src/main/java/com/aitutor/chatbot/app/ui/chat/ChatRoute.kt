@@ -6,6 +6,8 @@ import androidx.compose.ui.Modifier
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.lifecycle.viewmodel.compose.viewModel
 import com.aitutor.chatbot.app.di.AppViewModelFactory
+import com.aitutor.chatbot.app.domain.model.StudyTool
+import com.aitutor.chatbot.app.navigation.ChatStart
 
 /**
  * Connects [ChatScreen] to its ViewModel.
@@ -16,7 +18,9 @@ import com.aitutor.chatbot.app.di.AppViewModelFactory
 @Composable
 fun ChatRoute(
     onBack: () -> Unit,
+    onNewChat: (StudyTool) -> Unit,
     onSelectText: () -> Unit,
+    start: ChatStart,
     viewModelKey: String,
     voiceInputEnabled: Boolean,
     modifier: Modifier = Modifier,
@@ -33,7 +37,11 @@ fun ChatRoute(
         onDraftChange = viewModel::onDraftChange,
         onSend = viewModel::send,
         onSelectText = onSelectText,
-        onClearMessages = viewModel::clearMessages,
+        onNewChat = { onNewChat(state.tool) },
+        onRename = viewModel::rename,
+        // Leaving is what "delete" ends with, and it must wait for the delete — hence a callback.
+        onDeleteChat = { viewModel.deleteChat(onDeleted = onBack) },
+        onTextSizeChange = viewModel::setTextSize,
         onReadAloud = viewModel::onReadAloud,
         onErrorShown = viewModel::onErrorShown,
         onFilePicked = viewModel::onFilePicked,
@@ -45,6 +53,7 @@ fun ChatRoute(
         onVoiceCancelled = viewModel::onVoiceCancelled,
         onVoicePermissionDenied = viewModel::onVoicePermissionDenied,
         voiceInputEnabled = voiceInputEnabled,
+        start = start,
         modifier = modifier,
     )
 }

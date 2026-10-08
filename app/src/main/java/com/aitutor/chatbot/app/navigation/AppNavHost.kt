@@ -3,9 +3,11 @@ package com.aitutor.chatbot.app.navigation
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.stringResource
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.lifecycle.viewmodel.compose.viewModel
@@ -21,6 +23,7 @@ import com.aitutor.chatbot.app.domain.model.StudentProfile
 import com.aitutor.chatbot.app.domain.model.StudyTool
 import com.aitutor.chatbot.app.ui.chat.ChatRoute
 import com.aitutor.chatbot.app.ui.chat.SelectTextScreen
+import com.aitutor.chatbot.app.ui.components.rememberLeaveGuard
 import com.aitutor.chatbot.app.ui.language.LanguageScreen
 import com.aitutor.chatbot.app.ui.main.MainShell
 import com.aitutor.chatbot.app.ui.onboarding.OnboardingScreen
@@ -28,6 +31,8 @@ import com.aitutor.chatbot.app.ui.premium.PremiumScreen
 import com.aitutor.chatbot.app.ui.premium.PremiumUiState
 import com.aitutor.chatbot.app.ui.settings.SettingsViewModel
 import com.aitutor.chatbot.app.ui.signin.SignInScreen
+import com.aitutor.chatbot.app.ui.signin.AuthViewModel
+import com.aitutor.chatbot.app.ui.signin.findActivity
 import com.aitutor.chatbot.app.ui.setup.SetupDoneScreen
 import com.aitutor.chatbot.app.ui.setup.SetupGoalsScreen
 import com.aitutor.chatbot.app.ui.setup.SetupLevelScreen
@@ -36,6 +41,7 @@ import com.aitutor.chatbot.app.ui.setup.SetupSubjectsScreen
 import com.aitutor.chatbot.app.ui.splash.SplashScreen
 import com.aitutor.chatbot.app.ui.theme.SampleContent
 import kotlinx.serialization.Serializable
+import kotlinx.coroutines.launch
 
 /** Type-safe destinations. */
 sealed interface Route {
@@ -68,12 +74,19 @@ sealed interface Route {
     /**
      * A conversation. The tool travels by name so the route stays a plain string, and [chatId] is
      * `0` for a chat that does not exist yet — it is written the first time a question is sent.
+     * [start] and [draft] are how Home's ask bar and chips open a new chat; see [ChatLaunch].
      */
     @Serializable
-    data class Chat(val toolName: String, val chatId: Long = 0L) : Route {
+    data class Chat(
+        val toolName: String,
+        val chatId: Long = 0L,
+        val start: ChatStart = ChatStart.None,
+        val draft: String = "",
+    ) : Route {
         companion object {
             const val TOOL_KEY = "toolName"
             const val CHAT_ID_KEY = "chatId"
+            const val DRAFT_KEY = "draft"
         }
     }
 
@@ -91,6 +104,7 @@ fun AppNavHost(
 ) {
     val settingsViewModel: SettingsViewModel = viewModel(factory = AppViewModelFactory.settings)
     val settings by settingsViewModel.settings.collectAsStateWithLifecycle()
+    val authViewModel: AuthViewModel = viewModel(factory = AppViewModelFactory.auth)
 
     // Setup's answers are held here and committed once, at the end. Abandoning setup halfway leaves
     // nothing stored, so a returning user never meets a half-filled profile.
@@ -106,9 +120,18 @@ fun AppNavHost(
                 ready = settings != null,
                 onFinished = {
                     val resolved = settings ?: return@SplashScreen
-                    navController.navigate(
-                        if (resolved.firstRunComplete) Route.Main else Route.Language
-                    ) {
+                    val user = authViewModel.user.value
+                    val start = startOnLaunch(resolved.firstRunComplete, resolved.setupOwnerUid, user?.uid)
+
+                    if (shouldClaimSetup(resolved.firstRunComplete, resolved.setupOwnerUid, user?.uid)) {
+                        settingsViewModel.claimSetup(user!!.uid)
+                    }
+                    // Setup picked up again after an interruption: offer the account's name, as a
+                    // fresh sign-in would, unless something has already been typed.
+                    if (start == Start.Setup && draftProfile.name.isBlank()) {
+                        draftProfile = draftProfile.copy(name = user?.suggestedFirstName().orEmpty())
+                    }
+                    navController.navigate(start.toRoute()) {
                         popUpTo(Route.Splash) { inclusive = true }
                     }
                 },
@@ -125,14 +148,55 @@ fun AppNavHost(
             OnboardingScreen(onFinished = { navController.navigate(Route.SignIn) })
         }
         composable<Route.SignIn> {
-            // Signing in is not wired yet, so both actions advance the same way the design's
-            // artboard links do. What "skip" means once requests are authenticated is decided
-            // when the auth layer lands, not here.
+            val authState by authViewModel.state.collectAsStateWithLifecycle()
+            val activity = LocalContext.current.findActivity()
+            val scope = rememberCoroutineScope()
+
+            // Back on this screen leaves the app. While a sign-in is still running that is asked
+            // about first; the request is cancelled with the screen, so confirming just finishes.
+            rememberLeaveGuard(
+                busy = authState.inProgress,
+                bodyRes = R.string.leave_signin_body,
+                onLeave = { activity?.finish() },
+            )
+
+            // Where to go depends on whether setup is already done *for this account* (see
+            // afterSignIn). Someone who has set up before goes straight to Home. A new account goes
+            // to setup with an empty draft and its Google first name suggested, which they can change
+            // or skip; someone who skipped sign-in gets the same, with the name left empty. SignIn is
+            // popped either way, so Back never returns a signed-in person to it.
+            val continueIntoApp = {
+                val saved = settings.orDefault()
+                val user = authViewModel.user.value
+                val next = afterSignIn(saved.firstRunComplete, saved.setupOwnerUid, user?.uid)
+
+                if (next == Start.Setup) {
+                    // Fresh, so nothing from an earlier person's setup is offered to this one.
+                    draftProfile = StudentProfile(name = user?.suggestedFirstName().orEmpty())
+                } else if (shouldClaimSetup(saved.firstRunComplete, saved.setupOwnerUid, user?.uid)) {
+                    settingsViewModel.claimSetup(user!!.uid)
+                }
+                navController.navigate(next.toRoute()) {
+                    popUpTo(Route.SignIn) { inclusive = true }
+                }
+            }
+
             SignInScreen(
-                onContinueWithGoogle = { navController.navigate(Route.SetupName) },
-                onSkip = { navController.navigate(Route.SetupName) },
+                onContinueWithGoogle = {
+                    activity?.let { host ->
+                        scope.launch { if (authViewModel.signInWithGoogle(host)) continueIntoApp() }
+                    }
+                },
+                onSkip = {
+                    scope.launch {
+                        authViewModel.continueWithoutAccount()
+                        continueIntoApp()
+                    }
+                },
                 onOpenTerms = {},
                 onOpenPrivacy = {},
+                inProgress = authState.inProgress,
+                errorRes = authState.errorRes,
             )
         }
         composable<Route.SetupName> {
@@ -181,7 +245,7 @@ fun AppNavHost(
             SetupDoneScreen(
                 profile = draftProfile,
                 onStart = {
-                    settingsViewModel.completeSetup(draftProfile)
+                    settingsViewModel.completeSetup(draftProfile, ownerUid = authViewModel.user.value?.uid)
                     navController.navigate(Route.Main) {
                         popUpTo(Route.Language) { inclusive = true }
                     }
@@ -200,6 +264,11 @@ fun AppNavHost(
                 onThemeModeChange = settingsViewModel::setThemeMode,
                 onVoiceInputChange = settingsViewModel::setVoiceInputEnabled,
                 onToolClick = { tool -> navController.navigate(Route.Chat(tool.name)) },
+                onLaunchChat = { launch ->
+                    navController.navigate(
+                        Route.Chat(launch.tool.name, start = launch.start, draft = launch.draft)
+                    )
+                },
                 onOpenChat = { entry ->
                     navController.navigate(Route.Chat(entry.tool.name, entry.chatId))
                 },
@@ -209,6 +278,14 @@ fun AppNavHost(
                 onEditSubjects = { navController.navigate(Route.EditSubjects) },
                 onEditGoals = { navController.navigate(Route.EditGoals) },
                 onSeeProPlans = { navController.navigate(Route.Premium) },
+                // A subscriber has nothing to upgrade to, so the diamond is for everyone else.
+                onLogOut = {
+                    authViewModel.signOut()
+                    navController.navigate(Route.SignIn) {
+                        popUpTo(Route.Main) { inclusive = true }
+                    }
+                },
+                showUpgrade = !resolved.isPro,
             )
         }
         composable<Route.EditName> {
@@ -283,7 +360,15 @@ fun AppNavHost(
             val route = entry.toRoute<Route.Chat>()
             ChatRoute(
                 onBack = { navController.popBackStack() },
+                // Replaces this chat rather than stacking on it, so Back from the new one returns
+                // to where this one was opened from.
+                onNewChat = { tool ->
+                    navController.navigate(Route.Chat(toolName = tool.name)) {
+                        popUpTo<Route.Chat> { inclusive = true }
+                    }
+                },
                 onSelectText = { navController.navigate(Route.SelectText) },
+                start = route.start,
                 voiceInputEnabled = settings.orDefault().voiceInputEnabled,
                 // A distinct key per conversation, so moving between two chats cannot reuse one
                 // ViewModel and briefly show the wrong thread.
@@ -327,6 +412,13 @@ fun AppNavHost(
             )
         }
     }
+}
+
+private fun Start.toRoute(): Route = when (this) {
+    Start.Language -> Route.Language
+    Start.SignIn -> Route.SignIn
+    Start.Setup -> Route.SetupName
+    Start.Home -> Route.Main
 }
 
 /**
