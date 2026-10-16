@@ -1,0 +1,390 @@
+package com.askylix.app.ui.chat
+
+import android.text.format.Formatter
+
+import androidx.compose.foundation.background
+import androidx.compose.foundation.border
+import androidx.compose.foundation.clickable
+import androidx.compose.foundation.layout.Arrangement
+import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.Row
+import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.height
+import androidx.compose.foundation.layout.offset
+import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.size
+import androidx.compose.foundation.layout.widthIn
+import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.material3.Icon
+import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.Text
+import androidx.compose.runtime.Composable
+import androidx.compose.runtime.compositionLocalOf
+import androidx.compose.ui.Alignment
+import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.alpha
+import androidx.compose.ui.draw.clip
+import androidx.compose.ui.draw.shadow
+import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.graphics.vector.ImageVector
+import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.res.stringResource
+import androidx.compose.ui.semantics.Role
+import androidx.compose.ui.text.SpanStyle
+import androidx.compose.ui.text.TextStyle
+import androidx.compose.ui.text.buildAnnotatedString
+import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.text.style.TextOverflow
+import androidx.compose.ui.text.withStyle
+import androidx.compose.ui.unit.dp
+import androidx.compose.ui.unit.sp
+import com.askylix.app.R
+import com.askylix.app.domain.model.AnswerBlock
+import com.askylix.app.domain.model.Rating
+import com.askylix.app.domain.model.Attachment
+import com.askylix.app.domain.model.ChatTextSize
+import com.askylix.app.ui.icons.AppIcons
+import com.askylix.app.ui.theme.AppShapes
+import com.askylix.app.ui.theme.Dimens
+import com.askylix.app.ui.theme.appColors
+
+internal val BubbleMaxWidth = 272.dp
+private val AttachmentShape = RoundedCornerShape(16.dp)
+private val ShadowTint = Color(0xFF080C28)
+
+/** The 30dp spark that attributes an answer to the tutor. */
+@Composable
+internal fun AssistantAvatar(modifier: Modifier = Modifier) {
+    val colors = MaterialTheme.appColors
+    Box(
+        modifier = modifier
+            .size(30.dp)
+            .clip(RoundedCornerShape(10.dp))
+            .background(colors.accent),
+        contentAlignment = Alignment.Center,
+    ) {
+        Icon(
+            imageVector = AppIcons.Spark,
+            contentDescription = null,
+            tint = colors.onAccent,
+            modifier = Modifier.size(15.dp),
+        )
+    }
+}
+
+/** The size of conversation text chosen in the chat menu; messages read it, the rest of the screen does not. */
+internal val LocalChatTextSize = compositionLocalOf { ChatTextSize.Default }
+
+/** Body text for a message, scaled to [LocalChatTextSize] — size and line height together, so the leading keeps its proportion. */
+@Composable
+private fun messageTextStyle(): TextStyle {
+    val base = MaterialTheme.typography.bodyLarge
+    val scale = LocalChatTextSize.current.scale
+    return base.copy(fontSize = base.fontSize * scale, lineHeight = base.lineHeight * scale)
+}
+
+/** The centred day separator. */
+@Composable
+internal fun DayMarker(label: String, modifier: Modifier = Modifier) {
+    Text(
+        text = label,
+        style = MaterialTheme.typography.labelMedium.copy(
+            fontSize = 12.sp,
+            fontWeight = FontWeight.SemiBold,
+        ),
+        color = MaterialTheme.appColors.textTertiary,
+        modifier = modifier,
+    )
+}
+
+/** The student's own message. Flat accent, and the corner nearest them is the flattened one. */
+@Composable
+internal fun UserBubble(text: String, modifier: Modifier = Modifier) {
+    val colors = MaterialTheme.appColors
+    Text(
+        text = text,
+        style = messageTextStyle(),
+        color = colors.onAccent,
+        modifier = modifier
+            .widthIn(max = BubbleMaxWidth)
+            .clip(AppShapes.BubbleUser)
+            .background(colors.accent)
+            .padding(horizontal = Dimens.spaceLg + 2.dp, vertical = Dimens.spaceMd),
+    )
+}
+
+/**
+ * The chip naming an attached file.
+ *
+ * Used both above a sent question and above the composer while one is pending — [onRemove] is what
+ * tells the two apart, adding the × that takes a not-yet-sent file back off.
+ */
+@Composable
+internal fun AttachmentChip(
+    attachment: Attachment,
+    modifier: Modifier = Modifier,
+    onRemove: (() -> Unit)? = null,
+    /** Opens the file. Null for a chip that is only a label, such as one in a preview. */
+    onClick: (() -> Unit)? = null,
+    /** True while the file is being fetched. [downloadPercent] is how far along, when the size is known. */
+    downloading: Boolean = false,
+    downloadPercent: Int? = null,
+) {
+    val colors = MaterialTheme.appColors
+    val context = LocalContext.current
+    Row(
+        modifier = modifier
+            .clip(AttachmentShape)
+            .background(colors.surface)
+            .border(1.dp, colors.cardBorder, AttachmentShape)
+            .then(if (onClick != null) Modifier.clickable(role = Role.Button, onClick = onClick) else Modifier)
+            .padding(
+                start = Dimens.spaceSm,
+                end = if (onRemove == null) Dimens.spaceLg else Dimens.spaceXs,
+                top = Dimens.spaceSm,
+                bottom = Dimens.spaceSm,
+            ),
+        verticalAlignment = Alignment.CenterVertically,
+        horizontalArrangement = Arrangement.spacedBy(10.dp),
+    ) {
+        Box(
+            modifier = Modifier
+                .size(32.dp)
+                .clip(RoundedCornerShape(10.dp))
+                .background(colors.accentTint),
+            contentAlignment = Alignment.Center,
+        ) {
+            Icon(
+                imageVector = AppIcons.ScanText,
+                contentDescription = null,
+                tint = colors.accentText,
+                modifier = Modifier.size(17.dp),
+            )
+        }
+        Column(modifier = Modifier.weight(1f, fill = false)) {
+            Text(
+                text = attachment.fileName,
+                style = MaterialTheme.typography.bodySmall.copy(fontWeight = FontWeight.SemiBold),
+                color = colors.textPrimary,
+                maxLines = 1,
+                overflow = TextOverflow.Ellipsis,
+            )
+            Text(
+                text = when {
+                    // A count, not a bar: it changes as bytes arrive without anything on screen moving.
+                    downloading && downloadPercent != null -> stringResource(R.string.attach_downloading_percent, downloadPercent)
+                    downloading -> stringResource(R.string.attach_downloading)
+                    else -> stringResource(
+                        R.string.chat_attachment_detail,
+                        stringResource(attachment.source.labelRes),
+                        // Platform-formatted, so "1.2 MB" arrives already in the reader's locale.
+                        Formatter.formatShortFileSize(context, attachment.sizeBytes),
+                    )
+                },
+                style = MaterialTheme.typography.labelSmall.copy(
+                    fontSize = 11.5.sp,
+                    fontWeight = FontWeight.Normal,
+                ),
+                color = colors.textTertiary,
+            )
+        }
+        if (onRemove != null) {
+            Box(
+                modifier = Modifier
+                    .size(28.dp)
+                    .clip(AppShapes.Pill)
+                    .clickable(onClick = onRemove),
+                contentAlignment = Alignment.Center,
+            ) {
+                Icon(
+                    imageVector = AppIcons.Close,
+                    contentDescription = stringResource(R.string.cd_remove_attachment),
+                    tint = colors.textTertiary,
+                    modifier = Modifier.size(14.dp),
+                )
+            }
+        }
+    }
+}
+
+/**
+ * The tutor's answer. Bullets set their term in bold and the rest in the secondary grey, which is
+ * the whole reason the answer is modelled as blocks rather than as one string.
+ */
+@Composable
+internal fun AssistantBubble(
+    blocks: List<AnswerBlock>,
+    modifier: Modifier = Modifier,
+) {
+    val colors = MaterialTheme.appColors
+    Column(
+        modifier = modifier
+            .fillMaxWidth()
+            .shadow(10.dp, AppShapes.BubbleAi, ambientColor = ShadowTint, spotColor = ShadowTint)
+            .clip(AppShapes.BubbleAi)
+            .background(colors.surface)
+            .border(1.dp, colors.cardBorder, AppShapes.BubbleAi)
+            .padding(horizontal = Dimens.spaceLg + 2.dp, vertical = Dimens.spaceLg),
+        verticalArrangement = Arrangement.spacedBy(10.dp),
+    ) {
+        blocks.forEach { block ->
+            when (block) {
+                is AnswerBlock.Paragraph -> Text(
+                    text = block.text,
+                    style = messageTextStyle(),
+                    color = colors.textPrimary,
+                )
+                is AnswerBlock.Bullet -> BulletLine(term = block.term, text = block.text)
+            }
+        }
+    }
+}
+
+@Composable
+private fun BulletLine(term: String, text: String) {
+    val colors = MaterialTheme.appColors
+    Row(horizontalArrangement = Arrangement.spacedBy(10.dp)) {
+        Box(
+            modifier = Modifier
+                .padding(top = Dimens.spaceSm)
+                .size(6.dp)
+                .clip(AppShapes.Pill)
+                .background(colors.accent)
+        )
+        Text(
+            text = buildAnnotatedString {
+                withStyle(SpanStyle(fontWeight = FontWeight.Bold, color = colors.textPrimary)) {
+                    append(term)
+                }
+                append(" ")
+                append(text)
+            },
+            style = messageTextStyle(),
+            color = colors.textSecondary,
+        )
+    }
+}
+
+/** The row of quick actions under the newest answer, ending in the "More" pill. */
+@Composable
+internal fun AnswerActions(
+    onMore: () -> Unit,
+    onReadAloud: () -> Unit,
+    modifier: Modifier = Modifier,
+    isSpeaking: Boolean = false,
+    rating: Rating? = null,
+    onCopy: (() -> Unit)? = null,
+    onRate: ((Rating) -> Unit)? = null,
+    onRegenerate: (() -> Unit)? = null,
+) {
+    val colors = MaterialTheme.appColors
+    Row(
+        modifier = modifier.offset(x = (-6).dp),
+        verticalAlignment = Alignment.CenterVertically,
+        horizontalArrangement = Arrangement.spacedBy(2.dp),
+    ) {
+        AnswerAction(AppIcons.Copy, stringResource(R.string.chat_action_copy), onClick = onCopy)
+        // One button for both states: reading, and stopping what is being read.
+        AnswerAction(
+            icon = if (isSpeaking) AppIcons.StopSquare else AppIcons.SpeakerWave,
+            contentDescription = stringResource(
+                if (isSpeaking) R.string.chat_action_stop_reading else R.string.chat_action_read_aloud
+            ),
+            onClick = onReadAloud,
+            tint = if (isSpeaking) colors.accent else colors.textTertiary,
+        )
+        // A rating already given is drawn in the accent, and pressing it again takes it back.
+        AnswerAction(
+            icon = AppIcons.ThumbUp,
+            contentDescription = stringResource(R.string.chat_action_helpful),
+            onClick = onRate?.let { { it(Rating.Helpful) } },
+            tint = if (rating == Rating.Helpful) colors.accent else null,
+        )
+        AnswerAction(
+            icon = AppIcons.ThumbDown,
+            contentDescription = stringResource(R.string.chat_action_not_helpful),
+            onClick = onRate?.let { { it(Rating.NotHelpful) } },
+            tint = if (rating == Rating.NotHelpful) colors.accent else null,
+        )
+        AnswerAction(AppIcons.Refresh, stringResource(R.string.chat_action_regenerate), onClick = onRegenerate)
+        Row(
+            modifier = Modifier
+                .padding(start = Dimens.spaceXxs)
+                .height(30.dp)
+                .clip(AppShapes.Pill)
+                .background(colors.accentTint)
+                .clickable(onClick = onMore)
+                .padding(horizontal = 10.dp),
+            verticalAlignment = Alignment.CenterVertically,
+            horizontalArrangement = Arrangement.spacedBy(Dimens.spaceXxs),
+        ) {
+            Icon(
+                imageVector = AppIcons.DotsHorizontal,
+                contentDescription = null,
+                tint = colors.accentText,
+                modifier = Modifier.size(16.dp),
+            )
+            Text(
+                text = stringResource(R.string.chat_action_more),
+                style = MaterialTheme.typography.labelLarge.copy(
+                    fontSize = 12.5.sp,
+                    fontWeight = FontWeight.SemiBold,
+                ),
+                color = colors.accentText,
+            )
+        }
+    }
+}
+
+@Composable
+private fun AnswerAction(
+    icon: ImageVector,
+    contentDescription: String,
+    onClick: (() -> Unit)? = null,
+    tint: Color? = null,
+) {
+    val colors = MaterialTheme.appColors
+    Box(
+        modifier = Modifier
+            .size(34.dp)
+            .clip(AppShapes.Pill)
+            // A button that is not wired (a preview) takes no click rather than an empty one, so it does
+            // not report itself to accessibility as working.
+            .then(if (onClick != null) Modifier.clickable(onClick = onClick) else Modifier),
+        contentAlignment = Alignment.Center,
+    ) {
+        Icon(
+            imageVector = icon,
+            contentDescription = contentDescription,
+            tint = tint ?: colors.textTertiary,
+            modifier = Modifier.size(17.dp),
+        )
+    }
+}
+
+/** The three dots shown while a reply is being generated, at the opacities the design fixes. */
+@Composable
+internal fun TypingIndicator(modifier: Modifier = Modifier) {
+    val colors = MaterialTheme.appColors
+    Row(
+        modifier = modifier
+            .height(36.dp)
+            .clip(AppShapes.Pill)
+            .background(colors.surface)
+            .border(1.dp, colors.cardBorder, AppShapes.Pill)
+            .padding(horizontal = Dimens.spaceLg),
+        verticalAlignment = Alignment.CenterVertically,
+        horizontalArrangement = Arrangement.spacedBy(5.dp),
+    ) {
+        listOf(1f, 0.55f, 0.3f).forEach { opacity ->
+            Box(
+                modifier = Modifier
+                    .size(6.dp)
+                    .alpha(opacity)
+                    .clip(AppShapes.Pill)
+                    .background(colors.accentText)
+            )
+        }
+    }
+}

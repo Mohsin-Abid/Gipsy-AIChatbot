@@ -3,6 +3,8 @@
     xmlns:tools="http://schemas.android.com/tools">
 
     <uses-permission android:name="android.permission.INTERNET" />
+    <!-- A normal permission, granted at install with no prompt: it only lets the app ask whether there is a connection. -->
+    <uses-permission android:name="android.permission.ACCESS_NETWORK_STATE" />
 
     <!--
       Firebase Analytics adds three advertising permissions by default: the Play services advertising

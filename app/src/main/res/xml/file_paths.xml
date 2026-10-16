@@ -1,8 +1,14 @@
 <?xml version="1.0" encoding="utf-8"?>
 <!--
-  The one place the camera app is allowed to write. A capture lands in the app's cache as a
-  temporary file; the kept copy is written by AttachmentStore into files/attachments/ afterwards.
+  Two places in the app's cache are shared with other apps, and only through this provider:
+
+  captures/     where the camera app is allowed to write. A capture lands here as a temporary file; the
+                copy that is sent is written by AttachmentStore into attachments/ afterwards.
+  attachments/  the files of a chat, picked or downloaded from a signed link. They are handed to the
+                phone's own viewer when the student taps one, so a photo or a document opens in an app
+                that can show it.
 -->
 <paths>
     <cache-path name="captures" path="captures/" />
+    <cache-path name="attachments" path="attachments/" />
 </paths>

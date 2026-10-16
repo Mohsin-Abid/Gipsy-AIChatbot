@@ -1,0 +1,14 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!--
+  Every connection must be encrypted, in release and debug alike, with one exception that exists only in
+  debug builds: the emulator's address for the machine it runs on (10.0.2.2). It is what lets a debug
+  build be pointed at a fake server with -PapiBaseUrl=http://10.0.2.2:8765/v1/ for trying the app
+  without the real backend. The release build has no such file and allows no plain connection at all.
+-->
+<network-security-config>
+    <base-config cleartextTrafficPermitted="false" />
+    <domain-config cleartextTrafficPermitted="true">
+        <domain includeSubdomains="false">10.0.2.2</domain>
+        <domain includeSubdomains="false">localhost</domain>
+    </domain-config>
+</network-security-config>

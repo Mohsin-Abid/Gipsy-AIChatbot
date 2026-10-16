@@ -2,20 +2,29 @@ openapi: 3.1.0
 
 info:
   title: AI Tutor API
-  version: "1.0.0"
+  version: "2.0.0"
   description: |
-    The backend contract for the AI Tutor Android app.
+    The backend contract for the AI Tutor Android app: eleven endpoints.
 
     Every schema here mirrors a type that already exists in the client, so the names and enum values
-    are not invented — they are the wire form of `StudentProfile`, `StudyTool`, `AnswerBlock` and
-    the rest. `docs/api/README.md` holds the prose: the auth exchange, the quota model, the error
-    table and the Google Cloud setup this depends on.
+    are not invented. They are the wire form of `StudentProfile`, `StudyTool`, `AnswerBlock` and the
+    rest. `docs/api/README.md` holds the prose: how sign-in works, the quota model, the error table
+    and the Firebase setup this depends on.
+
+    **Sign-in is not part of this API.** The app signs in with Firebase (Google, or an anonymous
+    account for "Skip for now") and sends the Firebase ID token as the bearer on every call except
+    `GET /config`. The server only verifies that token. There is no login, refresh or logout endpoint.
 
     Conventions:
       * JSON in and out, camelCase fields, SCREAMING_SNAKE_CASE enums.
       * Timestamps are RFC 3339 UTC strings. The client stores epoch milliseconds.
       * Every failure uses the same `Error` envelope with a stable machine-readable `code`.
       * Lists are cursor paginated. Never offset: a list that grows at the head skips rows.
+
+    Changes since version 1.0 (the 22-endpoint design) and the 7 October plan: login moved to
+    Firebase; account deletion is `DELETE /me`; the Daily challenge endpoint, `challengeId` and
+    "Clear messages" are gone because the app no longer has them; the single `POST /chat` replaces the
+    separate create, send and regenerate calls.
   contact:
     name: AI Tutor
   license:
@@ -26,153 +35,92 @@ servers:
     description: Replace with your own host before implementing.
 
 security:
-  - bearerAuth: []
+  - firebaseIdToken: []
 
 tags:
-  - name: Auth
-    description: Sign in, session refresh, sign out, account deletion.
-  - name: User
-    description: The signed-in student's profile, settings, entitlement and quota.
-  - name: Chats
-    description: Conversations and their messages.
-  - name: Answers
-    description: Asking a question and getting a tutor reply.
+  - name: Account
+    description: The signed-in user's identity, profile, settings, plan and quota.
+  - name: Chat
+    description: Asking a question. One endpoint serves every study tool.
+  - name: History
+    description: Past conversations and their messages.
   - name: Feedback
     description: Rating and reporting an answer.
   - name: Billing
-    description: Google Play purchase verification and entitlement.
+    description: Google Play purchase verification.
+  - name: App
+    description: Settings the app reads before anyone signs in.
 
 paths:
 
-  # ----------------------------------------------------------------------------- Auth
+  # ----------------------------------------------------------------------------- Account
 
-  /auth/google:
-    post:
-      tags: [Auth]
-      summary: Exchange a Google ID token for a session
+  /me:
+    get:
+      tags: [Account]
+      summary: Everything the app needs after sign-in
       description: |
-        The only way into the app. The client obtains a Google ID token through Credential Manager
-        and posts it here; the server verifies it and returns **its own** tokens.
+        One call that fills the whole app: identity, profile, settings, plan and quota. The client
+        makes it right after sign-in and on every cold start.
 
-        The Google ID token is an identity assertion, not a session — it is never sent as the bearer
-        on any other endpoint.
-      security: []
-      operationId: signInWithGoogle
+        **The first call for a new `uid` creates the account.** There is no sign-up endpoint. A new
+        account comes back with `setupCompleted: false`, which is what sends the app to profile setup.
+        When it is `true`, the app goes straight to Home, so someone who signs in on a new phone does
+        not repeat setup.
+
+        A skipped ("anonymous") account has no `email`, `displayName` or `photoUrl`.
+      operationId: getMe
+      responses:
+        '200':
+          description: The signed-in student.
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/Me' }
+        '401': { $ref: '#/components/responses/Unauthenticated' }
+
+    patch:
+      tags: [Account]
+      summary: Change profile answers and settings
+      description: |
+        Send only what changed. Omitted fields are left alone. The response is the full `/me` again.
+
+        The app calls it with: the whole profile and `setupCompleted: true` once, at the end of first-time
+        setup; one field at a time from the four edit screens on Profile (name; level and grade;
+        subjects; goals and daily time); and a single setting from Language or the Profile switches.
+
+        `profile.name` may be an empty string, because the name step is optional.
+      operationId: updateMe
       requestBody:
         required: true
         content:
           application/json:
-            schema:
-              type: object
-              required: [idToken]
-              properties:
-                idToken:
-                  type: string
-                  description: The Google ID token (a JWT). Its `aud` must be the **Web** client ID.
-                device:
-                  $ref: '#/components/schemas/DeviceInfo'
+            schema: { $ref: '#/components/schemas/MeUpdate' }
       responses:
         '200':
-          description: Signed in. A session was created.
+          description: The updated student.
           content:
             application/json:
-              schema:
-                type: object
-                required: [accessToken, refreshToken, expiresIn, tokenType, isNewUser, user]
-                properties:
-                  accessToken:
-                    type: string
-                  refreshToken:
-                    type: string
-                    description: Opaque and single-use. Rotated on every refresh.
-                  expiresIn:
-                    type: integer
-                    description: Access token lifetime in seconds.
-                    examples: [3600]
-                  tokenType:
-                    type: string
-                    const: Bearer
-                  isNewUser:
-                    type: boolean
-                    description: |
-                      True on the very first sign-in for this Google account. The client uses it to
-                      decide whether to run profile setup or go straight to Home.
-                  user:
-                    $ref: '#/components/schemas/Me'
-        '401':
-          $ref: '#/components/responses/InvalidGoogleToken'
+              schema: { $ref: '#/components/schemas/Me' }
         '400':
-          $ref: '#/components/responses/ValidationFailed'
-
-  /auth/refresh:
-    post:
-      tags: [Auth]
-      summary: Rotate the session
-      description: |
-        Called when a request returns 401. The old refresh token is consumed and a new pair is
-        issued. A 401 here means the session is gone for good: the client clears it and shows the
-        sign-in screen.
-      security: []
-      operationId: refreshSession
-      requestBody:
-        required: true
-        content:
-          application/json:
-            schema:
-              type: object
-              required: [refreshToken]
-              properties:
-                refreshToken:
-                  type: string
-      responses:
-        '200':
-          description: A new token pair.
-          content:
-            application/json:
-              schema:
-                type: object
-                required: [accessToken, refreshToken, expiresIn, tokenType]
-                properties:
-                  accessToken: { type: string }
-                  refreshToken: { type: string }
-                  expiresIn: { type: integer, examples: [3600] }
-                  tokenType: { type: string, const: Bearer }
-        '401':
-          description: The refresh token is invalid, expired, revoked or replayed. Sign the user out.
+          description: |
+            Validation failed. Most commonly more than two goals. The app caps it at two in the UI, so
+            it should not normally happen.
           content:
             application/json:
               schema: { $ref: '#/components/schemas/Error' }
-
-  /auth/logout:
-    post:
-      tags: [Auth]
-      summary: Revoke the current session
-      description: Revokes the refresh token supplied. Other devices keep their sessions.
-      operationId: logout
-      requestBody:
-        required: true
-        content:
-          application/json:
-            schema:
-              type: object
-              required: [refreshToken]
-              properties:
-                refreshToken: { type: string }
-      responses:
-        '204': { description: Signed out. }
         '401': { $ref: '#/components/responses/Unauthenticated' }
 
-  /auth/account:
     delete:
-      tags: [Auth]
+      tags: [Account]
       summary: Delete the account and all of its data
       description: |
-        Required by Google Play for any app offering in-app account creation. Deletes the user,
-        their profile, every chat and message, and every stored attachment, and revokes all
-        sessions. Play also requires a publicly reachable web URL that does the same thing.
+        Required by Google Play for any app that creates accounts. Deletes the user, profile, every chat
+        and message, every stored file, and the Firebase account itself (Admin SDK `deleteUser`). The app
+        then signs out on the phone. Play also requires a publicly reachable web URL that does the same
+        thing (`urls.accountDeletion` in `/config`).
 
-        An active Play subscription is **not** cancelled by this call — the user must do that in
-        Play. The response says whether one is still running so the client can tell them.
+        An active Play subscription is **not** cancelled by this call. The user must do that in Play. The
+        response says whether one is still running so the app can tell them.
       operationId: deleteAccount
       responses:
         '200':
@@ -189,87 +137,120 @@ paths:
                     description: True if a Play subscription is still active and must be cancelled in Play.
         '401': { $ref: '#/components/responses/Unauthenticated' }
 
-  # ----------------------------------------------------------------------------- User
+  # ----------------------------------------------------------------------------- Chat
 
-  /me:
-    get:
-      tags: [User]
-      summary: Everything the app needs after sign-in
+  /chat:
+    post:
+      tags: [Chat]
+      summary: Ask any tool a question, optionally with a file
       description: |
-        One call that fills the whole app: identity, profile, settings, entitlement and quota.
-        The client makes this immediately after sign-in and on every cold start.
-      operationId: getMe
-      responses:
-        '200':
-          description: The signed-in student.
-          content:
-            application/json:
-              schema: { $ref: '#/components/schemas/Me' }
-        '401': { $ref: '#/components/responses/Unauthenticated' }
+        The endpoint the app is built around. The tool is a word in the request, so a new tool later is a
+        new word on the backend and no new endpoint. (The app still needs an update to show a new tool's
+        name and icon.)
 
-  /me/profile:
-    patch:
-      tags: [User]
-      summary: Update the study profile
-      description: |
-        What the four setup screens collect. The client commits once at the end of setup, and again
-        whenever a row on Profile is edited. Every field is optional — omitted fields are left alone.
-      operationId: updateProfile
+        Send JSON for a text-only question. With a file, send `multipart/form-data`: the same fields as a
+        JSON part named `payload`, and the bytes in a part named `file`.
+
+        The request does **not** carry conversation history. The server stores the thread and reads it
+        back itself. Only the new question is sent.
+
+        The server stores the question, generates the answer, stores that too, and returns both with the
+        updated quota. If generation fails, the question is still stored and the response is `207`. The
+        app shows the question with a retry, never a made-up reply.
+
+        To start a chat, leave `chatId` empty. The server creates it, titles it from the first question
+        (from the file name when only a file is sent), cut at 60 characters, and returns its id. The app
+        sends nothing until a first question exists, so opening a tool and leaving creates no chat.
+
+        To regenerate, send the **assistant** message id as `regenerateMessageId`. The old answer is
+        replaced, so the thread never shows two answers to one question. This uses quota, like any other
+        generation.
+
+        `Idempotency-Key` is required. A retry after a timeout must return the same answer and count
+        once against the daily quota.
+      operationId: sendChat
+      parameters:
+        - $ref: '#/components/parameters/IdempotencyKey'
       requestBody:
         required: true
         content:
           application/json:
-            schema: { $ref: '#/components/schemas/StudentProfile' }
+            schema: { $ref: '#/components/schemas/ChatRequest' }
+          multipart/form-data:
+            schema:
+              type: object
+              required: [payload]
+              properties:
+                payload:
+                  $ref: '#/components/schemas/ChatRequest'
+                file:
+                  type: string
+                  format: binary
+                  description: |
+                    At most 20 MB. Accepted types are `image/jpeg`, `application/pdf` and
+                    `application/vnd.openxmlformats-officedocument.wordprocessingml.document`.
+
+                    Images arrive as JPEG whatever was picked: the app re-encodes and downscales to a 2000px
+                    long edge before upload.
+            encoding:
+              payload: { contentType: application/json }
+              file:
+                contentType: image/jpeg, application/pdf, application/vnd.openxmlformats-officedocument.wordprocessingml.document
       responses:
-        '200':
-          description: The updated profile.
+        '201':
+          description: The question was stored and answered.
           content:
             application/json:
-              schema: { $ref: '#/components/schemas/StudentProfile' }
-        '400':
+              schema: { $ref: '#/components/schemas/ChatResponse' }
+        '207':
           description: |
-            Validation failed. Most commonly more than two goals — the app caps this at two in the
-            UI, so it should not normally happen.
+            The question was stored but no answer could be made: the upstream model failed or timed out.
+            The app keeps the question in the thread and offers a retry. This does **not** use quota.
           content:
             application/json:
-              schema: { $ref: '#/components/schemas/Error' }
+              schema:
+                type: object
+                required: [chatId, userMessage, error]
+                properties:
+                  chatId: { type: string }
+                  userMessage: { $ref: '#/components/schemas/Message' }
+                  error: { $ref: '#/components/schemas/ErrorBody' }
+        '400': { $ref: '#/components/responses/ValidationFailed' }
         '401': { $ref: '#/components/responses/Unauthenticated' }
+        '404': { $ref: '#/components/responses/NotFound' }
+        '413': { $ref: '#/components/responses/FileTooLarge' }
+        '415': { $ref: '#/components/responses/UnsupportedFileType' }
+        '422': { $ref: '#/components/responses/FileUnreadable' }
+        '429': { $ref: '#/components/responses/QuotaExceeded' }
 
-  /me/settings:
-    patch:
-      tags: [User]
-      summary: Update app settings
-      operationId: updateSettings
-      requestBody:
-        required: true
-        content:
-          application/json:
-            schema: { $ref: '#/components/schemas/UserSettings' }
-      responses:
-        '200':
-          description: The updated settings.
-          content:
-            application/json:
-              schema: { $ref: '#/components/schemas/UserSettings' }
-        '401': { $ref: '#/components/responses/Unauthenticated' }
-
-  # ----------------------------------------------------------------------------- Chats
+  # ----------------------------------------------------------------------------- History
 
   /chats:
     get:
-      tags: [Chats]
+      tags: [History]
       summary: List conversations
       description: |
-        Backs the History screen and the "Continue studying" card on Home. Newest first, by
-        `updatedAt`.
+        Backs the History tab and Home's "Continue learning" (`limit=1`) and "Recent activity"
+        (`limit=3`). Newest first, by `updatedAt`.
 
-        History's filter chips (All, Chats, Solved, Summaries, Writing) are derived on the client
-        from each entry's tool, so there is no filter parameter here — the client already has what
-        it needs once it has the tool.
+        History's filter chips (All, Chats, Solved, Summaries, Writing) map to `category`. Which tools
+        belong to each is in the tool table in `docs/api/README.md`.
       operationId: listChats
       parameters:
         - $ref: '#/components/parameters/Cursor'
         - $ref: '#/components/parameters/Limit'
+        - name: q
+          in: query
+          required: false
+          schema: { type: string, maxLength: 200 }
+          description: Search text. Matches chat titles and message text.
+        - name: category
+          in: query
+          required: false
+          schema:
+            type: string
+            enum: [ALL, CHATS, SOLVED, SUMMARIES, WRITING]
+            default: ALL
       responses:
         '200':
           description: A page of conversations.
@@ -287,52 +268,27 @@ paths:
                     description: Pass as `cursor` for the next page. Null on the last page.
         '401': { $ref: '#/components/responses/Unauthenticated' }
 
-    post:
-      tags: [Chats]
-      summary: Start a conversation
-      description: |
-        Called when a student taps a tool. The chat exists before its first question, which is what
-        lets the title and subject be shown in the header straight away.
-      operationId: createChat
-      requestBody:
-        required: true
-        content:
-          application/json:
-            schema:
-              type: object
-              required: [tool]
-              properties:
-                tool: { $ref: '#/components/schemas/StudyTool' }
-                title:
-                  type: string
-                  description: Defaults to the tool's own name if omitted.
-                  maxLength: 200
-                subject:
-                  type: string
-                  description: |
-                    Free text, not the `Subject` enum — a chat's subject is a display label the
-                    client sets from context, while `profile.subjects` is the enumerated set.
-                  maxLength: 100
-      responses:
-        '201':
-          description: Created.
-          content:
-            application/json:
-              schema: { $ref: '#/components/schemas/Chat' }
-        '401': { $ref: '#/components/responses/Unauthenticated' }
-
   /chats/{chatId}:
     parameters:
       - $ref: '#/components/parameters/ChatId'
+
     get:
-      tags: [Chats]
+      tags: [History]
       summary: One conversation, with its newest messages
+      description: |
+        Messages come oldest to newest. For older ones, pass `before` with the `nextCursor`. Attachment
+        links expire after about ten minutes, so the app fetches the chat again to get fresh ones.
       operationId: getChat
       parameters:
+        - name: before
+          in: query
+          required: false
+          schema: { type: string }
+          description: The `nextCursor` from the previous response, to load older messages.
         - $ref: '#/components/parameters/Limit'
       responses:
         '200':
-          description: The chat and a page of messages, oldest to newest.
+          description: The chat and a page of messages.
           content:
             application/json:
               schema:
@@ -345,13 +301,14 @@ paths:
                     items: { $ref: '#/components/schemas/Message' }
                   nextCursor:
                     type: [string, 'null']
-                    description: Cursor for *older* messages, for scrolling back.
-        '404': { $ref: '#/components/responses/NotFound' }
+                    description: Cursor for *older* messages. Null when there are no more.
         '401': { $ref: '#/components/responses/Unauthenticated' }
+        '404': { $ref: '#/components/responses/NotFound' }
 
     patch:
-      tags: [Chats]
+      tags: [History]
       summary: Rename a conversation
+      description: The Rename chat dialog in the chat menu.
       operationId: renameChat
       requestBody:
         required: true
@@ -361,187 +318,34 @@ paths:
               type: object
               required: [title]
               properties:
-                title: { type: string, maxLength: 200 }
+                title:
+                  type: string
+                  minLength: 1
+                  maxLength: 100
+                  description: |
+                    The app sends at most 61 characters: up to 60 typed, or a 60-character cut of the first
+                    question followed by an ellipsis.
       responses:
         '200':
-          description: Renamed.
+          description: Renamed. The updated chat, as in the list.
           content:
             application/json:
               schema: { $ref: '#/components/schemas/Chat' }
-        '404': { $ref: '#/components/responses/NotFound' }
+        '400': { $ref: '#/components/responses/ValidationFailed' }
         '401': { $ref: '#/components/responses/Unauthenticated' }
+        '404': { $ref: '#/components/responses/NotFound' }
 
     delete:
-      tags: [Chats]
+      tags: [History]
       summary: Delete a conversation
-      description: Deletes its messages and their attachments too.
+      description: |
+        Deletes the chat, its messages and their files. The app asks the person to confirm first, and
+        stops any answer still being generated for it before calling this.
       operationId: deleteChat
       responses:
         '204': { description: Deleted. }
-        '404': { $ref: '#/components/responses/NotFound' }
         '401': { $ref: '#/components/responses/Unauthenticated' }
-
-  /chats/{chatId}/messages:
-    parameters:
-      - $ref: '#/components/parameters/ChatId'
-
-    get:
-      tags: [Chats]
-      summary: Page back through older messages
-      operationId: listMessages
-      parameters:
-        - $ref: '#/components/parameters/Cursor'
-        - $ref: '#/components/parameters/Limit'
-      responses:
-        '200':
-          description: A page of messages, oldest to newest.
-          content:
-            application/json:
-              schema:
-                type: object
-                required: [items, nextCursor]
-                properties:
-                  items:
-                    type: array
-                    items: { $ref: '#/components/schemas/Message' }
-                  nextCursor: { type: [string, 'null'] }
         '404': { $ref: '#/components/responses/NotFound' }
-        '401': { $ref: '#/components/responses/Unauthenticated' }
-
-    post:
-      tags: [Answers]
-      summary: Ask a question, optionally with a file
-      description: |
-        The endpoint the app is built around.
-
-        `multipart/form-data` with a JSON `payload` part and an optional `file` part. The question
-        and its file travel together in one request.
-
-        The request does **not** carry conversation history: the server stores the thread and reads
-        it back itself. Only the new question is sent.
-
-        The server stores the question, generates the answer, stores that too, and returns both
-        along with the updated quota. If generation fails the question is still stored — the client
-        shows the question with an error beneath it, never a fabricated reply.
-
-        `Idempotency-Key` is required. A retry after a timeout must not consume a second question
-        from the student's daily quota.
-      operationId: sendMessage
-      parameters:
-        - $ref: '#/components/parameters/IdempotencyKey'
-      requestBody:
-        required: true
-        content:
-          multipart/form-data:
-            schema:
-              type: object
-              required: [payload]
-              properties:
-                payload:
-                  $ref: '#/components/schemas/AskPayload'
-                file:
-                  type: string
-                  format: binary
-                  description: |
-                    At most 20 MB (`AttachmentStore.MAX_FILE_BYTES`). Accepted types are
-                    `image/jpeg`, `application/pdf` and
-                    `application/vnd.openxmlformats-officedocument.wordprocessingml.document`.
-
-                    Images arrive as JPEG whatever was picked: the client re-encodes and downscales
-                    to a 2000px long edge before upload.
-            encoding:
-              payload: { contentType: application/json }
-              file:
-                contentType: image/jpeg, application/pdf, application/vnd.openxmlformats-officedocument.wordprocessingml.document
-      responses:
-        '201':
-          description: The question was stored and answered.
-          content:
-            application/json:
-              schema: { $ref: '#/components/schemas/AnswerResponse' }
-        '207':
-          description: |
-            The question was stored but no answer could be generated — the upstream model failed or
-            timed out. The client shows the question in the thread with a retry affordance. This
-            does **not** consume quota.
-          content:
-            application/json:
-              schema:
-                type: object
-                required: [userMessage, error]
-                properties:
-                  userMessage: { $ref: '#/components/schemas/Message' }
-                  error: { $ref: '#/components/schemas/ErrorBody' }
-        '413': { $ref: '#/components/responses/FileTooLarge' }
-        '415': { $ref: '#/components/responses/UnsupportedFileType' }
-        '422': { $ref: '#/components/responses/FileUnreadable' }
-        '429': { $ref: '#/components/responses/QuotaExceeded' }
-        '404': { $ref: '#/components/responses/NotFound' }
-        '401': { $ref: '#/components/responses/Unauthenticated' }
-
-    delete:
-      tags: [Chats]
-      summary: Clear a conversation's messages, keeping the chat
-      description: The "Clear chat" item in the chat options menu. Attachments go with the messages.
-      operationId: clearMessages
-      responses:
-        '204': { description: Cleared. }
-        '404': { $ref: '#/components/responses/NotFound' }
-        '401': { $ref: '#/components/responses/Unauthenticated' }
-
-  /chats/{chatId}/messages/{messageId}/regenerate:
-    parameters:
-      - $ref: '#/components/parameters/ChatId'
-      - $ref: '#/components/parameters/MessageId'
-    post:
-      tags: [Answers]
-      summary: Answer the same question again
-      description: |
-        The Regenerate action under an answer. `messageId` is the **assistant** message being
-        replaced. The old answer is discarded and a new one stored in its place, so the thread never
-        shows two answers to one question.
-
-        This consumes quota: it is another generation.
-      operationId: regenerateAnswer
-      parameters:
-        - $ref: '#/components/parameters/IdempotencyKey'
-      responses:
-        '200':
-          description: A fresh answer.
-          content:
-            application/json:
-              schema: { $ref: '#/components/schemas/AnswerResponse' }
-        '429': { $ref: '#/components/responses/QuotaExceeded' }
-        '404': { $ref: '#/components/responses/NotFound' }
-        '401': { $ref: '#/components/responses/Unauthenticated' }
-
-  /messages/{messageId}/attachment:
-    parameters:
-      - $ref: '#/components/parameters/MessageId'
-    get:
-      tags: [Chats]
-      summary: Download a message's attachment
-      description: |
-        Needed because conversations sync. A thread opened on a second device has messages whose
-        attachment exists only on the phone that sent it, so the file has to be fetchable.
-
-        Redirects to a short-lived signed URL rather than streaming bytes through the API.
-      operationId: getAttachment
-      responses:
-        '200':
-          description: |
-            The file itself, if you choose to stream through the API rather than redirect. Note that
-            OkHttp follows redirects by default, so the client sees this either way.
-          content:
-            application/octet-stream:
-              schema: { type: string, format: binary }
-        '302':
-          description: Redirect to a signed URL, valid for a few minutes.
-          headers:
-            Location:
-              schema: { type: string, format: uri }
-        '404': { $ref: '#/components/responses/NotFound' }
-        '401': { $ref: '#/components/responses/Unauthenticated' }
 
   # ----------------------------------------------------------------------------- Feedback
 
@@ -550,66 +354,55 @@ paths:
       - $ref: '#/components/parameters/MessageId'
     post:
       tags: [Feedback]
-      summary: Rate an answer
+      summary: Rate or report an answer
       description: |
-        The thumbs up and thumbs down under an answer. Sending the same rating again clears it, so
-        the buttons toggle.
-      operationId: rateAnswer
+        `messageId` is the answer's id. Send a rating, a report, or both.
+
+        `NONE` clears an earlier rating, so the thumb buttons can switch off.
+      operationId: sendFeedback
       requestBody:
         required: true
         content:
           application/json:
             schema:
               type: object
-              required: [rating]
+              minProperties: 1
               properties:
                 rating:
                   type: string
-                  enum: [HELPFUL, NOT_HELPFUL]
+                  enum: [HELPFUL, NOT_HELPFUL, NONE]
+                report:
+                  type: object
+                  required: [reason]
+                  properties:
+                    reason:
+                      type: string
+                      enum: [INCORRECT, HARMFUL, OFF_TOPIC, OTHER]
+                    detail:
+                      type: string
+                      maxLength: 1000
       responses:
         '204': { description: Recorded. }
-        '404': { $ref: '#/components/responses/NotFound' }
         '401': { $ref: '#/components/responses/Unauthenticated' }
-
-  /messages/{messageId}/report:
-    parameters:
-      - $ref: '#/components/parameters/MessageId'
-    post:
-      tags: [Feedback]
-      summary: Report an answer
-      description: The Flag item in the answer options sheet.
-      operationId: reportAnswer
-      requestBody:
-        required: true
-        content:
-          application/json:
-            schema:
-              type: object
-              required: [reason]
-              properties:
-                reason:
-                  type: string
-                  enum: [INCORRECT, HARMFUL, OFF_TOPIC, OTHER]
-                detail:
-                  type: string
-                  maxLength: 1000
-      responses:
-        '204': { description: Reported. }
         '404': { $ref: '#/components/responses/NotFound' }
-        '401': { $ref: '#/components/responses/Unauthenticated' }
 
   # ----------------------------------------------------------------------------- Billing
 
-  /billing/play/verify:
+  /billing/verify:
     post:
       tags: [Billing]
-      summary: Verify a Play purchase and grant entitlement
+      summary: Verify Google Play purchases and grant Pro
       description: |
-        Called right after Play Billing reports a purchase on the device. The app sends the token
-        and reads back the resulting entitlement — it never sets entitlement itself.
+        After a purchase, send that one purchase. For "Restore purchase", send every active one. The
+        server checks each token with Google Play and is the only thing that can grant Pro. The app
+        reads the plan and never sets it.
 
-        Should be idempotent on the purchase token: the same token sent twice grants once.
-      operationId: verifyPlayPurchase
+        Idempotent on the purchase token: the same token sent twice grants once.
+
+        **Open decision:** a purchase on an anonymous account is lost when the person logs out. The
+        recommendation is to answer `403 ACCOUNT_REQUIRED` for an anonymous token, so Pro needs a Google
+        sign-in. The app does not handle that code yet.
+      operationId: verifyPurchases
       parameters:
         - $ref: '#/components/parameters/IdempotencyKey'
       requestBody:
@@ -618,77 +411,69 @@ paths:
           application/json:
             schema:
               type: object
-              required: [purchaseToken, productId]
+              required: [purchases]
               properties:
-                purchaseToken: { type: string }
-                productId:
-                  type: string
-                  enum: [premium_yearly, premium_monthly]
-                  description: Must match the products created in the Play Console.
+                purchases:
+                  type: array
+                  minItems: 1
+                  items:
+                    type: object
+                    required: [productId, purchaseToken]
+                    properties:
+                      productId:
+                        type: string
+                        enum: [premium_yearly, premium_monthly]
+                        description: Must match the products created in the Play Console.
+                      purchaseToken: { type: string }
       responses:
         '200':
-          description: Verified. The entitlement as it now stands.
+          description: Verified. The plan as it now stands.
           content:
             application/json:
-              schema: { $ref: '#/components/schemas/Entitlement' }
+              schema: { $ref: '#/components/schemas/Plan' }
+        '401': { $ref: '#/components/responses/Unauthenticated' }
         '402':
           description: Play rejected the token, or the purchase is not in a granting state.
           content:
             application/json:
               schema: { $ref: '#/components/schemas/Error' }
-        '401': { $ref: '#/components/responses/Unauthenticated' }
 
-  /billing/restore:
-    post:
-      tags: [Billing]
-      summary: Re-check Play for existing purchases
-      description: |
-        The Restore purchases button. The client queries Play for the account's active purchases and
-        posts their tokens; the server re-verifies each and returns the resulting entitlement.
-      operationId: restorePurchases
-      requestBody:
-        required: true
-        content:
-          application/json:
-            schema:
-              type: object
-              required: [purchaseTokens]
-              properties:
-                purchaseTokens:
-                  type: array
-                  items: { type: string }
-      responses:
-        '200':
-          description: The entitlement after re-verification.
-          content:
-            application/json:
-              schema: { $ref: '#/components/schemas/Entitlement' }
-        '401': { $ref: '#/components/responses/Unauthenticated' }
+  # ----------------------------------------------------------------------------- App
 
-  /billing/entitlement:
+  /config:
     get:
-      tags: [Billing]
-      summary: The current plan
-      description: Also present inside `GET /me`; this exists for a cheap re-check after a purchase.
-      operationId: getEntitlement
+      tags: [App]
+      summary: Settings the app reads before anyone signs in
+      description: |
+        If the installed version is lower than `minAppVersion`, the app shows an update screen. This is
+        the only way to stop old app versions from using a changed API. The app works without it, so keep
+        it only if you want that control. The Privacy and Help links on Profile come from `urls`.
+      operationId: getConfig
+      security: []
       responses:
         '200':
-          description: The entitlement.
+          description: The current configuration.
           content:
             application/json:
-              schema: { $ref: '#/components/schemas/Entitlement' }
-        '401': { $ref: '#/components/responses/Unauthenticated' }
+              schema: { $ref: '#/components/schemas/Config' }
 
 # ================================================================================= Components
 
 components:
 
   securitySchemes:
-    bearerAuth:
+    firebaseIdToken:
       type: http
       scheme: bearer
       bearerFormat: JWT
-      description: The access token from `/auth/google` or `/auth/refresh` — never a Google ID token.
+      description: |
+        The Firebase ID token, as returned by `getIdToken()` in the app. It lasts one hour and the app
+        renews it, so there is no refresh endpoint.
+
+        Verify it with the Firebase Admin SDK, or check the JWT yourself: the signature against Google's
+        public keys, `iss` equal to `https://securetoken.google.com/<firebase-project-id>`, `aud` equal
+        to `<firebase-project-id>`, and not expired. `sub` is the user id. `firebase.sign_in_provider` is
+        `google.com` or `anonymous`.
 
   parameters:
     ChatId:
@@ -711,49 +496,59 @@ components:
       name: limit
       in: query
       required: false
-      schema: { type: integer, minimum: 1, maximum: 100, default: 20 }
+      schema: { type: integer, minimum: 1, maximum: 50, default: 20 }
     IdempotencyKey:
       name: Idempotency-Key
       in: header
       required: true
       schema: { type: string, format: uuid }
       description: |
-        A UUID the client generates once per logical action and reuses on every retry of it. The
-        server replays the original response rather than acting twice.
+        A UUID the app generates once per logical action and reuses on every retry of it. The server
+        replays the original response rather than acting twice.
 
   schemas:
 
-    # ---- Identity -------------------------------------------------------------
-
-    DeviceInfo:
-      type: object
-      description: Optional context, for session management and support.
-      properties:
-        platform: { type: string, enum: [ANDROID, IOS, WEB] }
-        appVersion: { type: string, examples: ["1.0"] }
-        osVersion: { type: string, examples: ["14"] }
-        deviceId:
-          type: string
-          description: A client-generated install id. Not a hardware identifier.
+    # ---- Account ---------------------------------------------------------------
 
     Me:
       type: object
-      required: [userId, email, profile, settings, entitlement, quota, createdAt]
+      required: [userId, isAnonymous, setupCompleted, profile, settings, plan, quota]
       properties:
-        userId: { type: string }
-        email: { type: string, format: email }
+        userId:
+          type: string
+          maxLength: 128
+          description: The Firebase `uid`. Do not assume a prefix or a format.
+        isAnonymous:
+          type: boolean
+          description: True for a "Skip for now" account.
+        email:
+          type: [string, 'null']
+          format: email
+          description: Null for an anonymous account.
         displayName:
           type: [string, 'null']
-          description: From the Google account. The Profile hero shows this when the student set no name.
+          description: |
+            From the Google account; null when anonymous. The app offers its first word as the name on
+            the setup screen.
         photoUrl: { type: [string, 'null'], format: uri }
-        emailVerified: { type: boolean }
+        setupCompleted:
+          type: boolean
+          description: False until the app has sent the setup answers. Decides setup versus Home.
         profile: { $ref: '#/components/schemas/StudentProfile' }
         settings: { $ref: '#/components/schemas/UserSettings' }
-        entitlement: { $ref: '#/components/schemas/Entitlement' }
+        plan: { $ref: '#/components/schemas/Plan' }
         quota: { $ref: '#/components/schemas/Quota' }
-        createdAt: { type: string, format: date-time }
 
-    # ---- Profile and settings -------------------------------------------------
+    MeUpdate:
+      type: object
+      minProperties: 1
+      properties:
+        profile: { $ref: '#/components/schemas/StudentProfile' }
+        settings: { $ref: '#/components/schemas/UserSettings' }
+        setupCompleted:
+          type: boolean
+          const: true
+          description: Only ever sent as `true`, with the setup answers, at the end of setup.
 
     StudentProfile:
       type: object
@@ -762,7 +557,7 @@ components:
         name:
           type: string
           maxLength: 100
-          description: The student's first name. May be empty — the setup step is skippable.
+          description: The student's first name. May be empty, because the setup step is optional.
         level: { $ref: '#/components/schemas/StudyLevel' }
         grade: { $ref: '#/components/schemas/Grade' }
         subjects:
@@ -776,11 +571,12 @@ components:
           maxItems: 2
           description: Capped at two (`StudentProfile.MAX_GOALS`). The server enforces it.
         dailyTime: { $ref: '#/components/schemas/StudyTime' }
-        reminderEnabled: { type: boolean }
 
     UserSettings:
       type: object
-      description: Mirrors the non-profile half of `data/prefs/UserPreferencesRepository.kt`.
+      description: |
+        Mirrors the settings half of `data/prefs/UserPreferencesRepository.kt`. The chat text size is
+        not here: it is saved on the phone only.
       properties:
         language:
           type: string
@@ -789,6 +585,39 @@ components:
         remindersEnabled: { type: boolean }
         voiceInputEnabled: { type: boolean }
         themeMode: { $ref: '#/components/schemas/ThemeMode' }
+
+    Plan:
+      type: object
+      required: [plan]
+      description: |
+        Read-only to the app. The server is the only writer, and only after verifying a Play purchase
+        token. Nothing in the app may grant Pro locally.
+      properties:
+        plan: { type: string, enum: [FREE, PRO] }
+        productId:
+          type: [string, 'null']
+          enum: [premium_yearly, premium_monthly, null]
+        expiresAt: { type: [string, 'null'], format: date-time }
+        autoRenewing: { type: [boolean, 'null'] }
+
+    Quota:
+      type: object
+      required: [unlimited]
+      description: |
+        The free tier's daily question limit. The server owns the counter; the app only displays it and
+        opens the Pro screen on `QUOTA_EXCEEDED`.
+      properties:
+        unlimited:
+          type: boolean
+          description: True for Pro, in which case the other fields are null.
+        limit: { type: [integer, 'null'] }
+        remaining: { type: [integer, 'null'] }
+        resetsAt:
+          type: [string, 'null']
+          format: date-time
+          description: When `remaining` returns to `limit`. Midnight UTC unless you choose otherwise.
+
+    # ---- Enums -----------------------------------------------------------------
 
     StudyLevel:
       type: string
@@ -829,40 +658,61 @@ components:
         - SUMMARY_GENERATOR
         - CONCEPT_EXPLAINER
 
-    ScanSource:
-      type: string
-      description: Which tile in the scan sheet produced the file. Mirrors `ScanSource`.
-      enum: [CAMERA, GALLERY, PDF, WORD]
+    # ---- Chat ------------------------------------------------------------------
 
-    # ---- Chats and messages ---------------------------------------------------
+    ChatRequest:
+      type: object
+      required: [tool]
+      description: The JSON body, or the `payload` part of a multipart send.
+      properties:
+        tool: { $ref: '#/components/schemas/StudyTool' }
+        chatId:
+          type: [string, 'null']
+          description: Empty to start a new chat. The server creates it and returns the id.
+        message:
+          type: string
+          maxLength: 8000
+          description: |
+            The question. Required unless a file is attached (a file on its own is a question) or
+            `regenerateMessageId` is set. Otherwise at least one character.
+        regenerateMessageId:
+          type: [string, 'null']
+          description: The **assistant** message to replace, for the Regenerate button.
+
+    ChatResponse:
+      type: object
+      required: [chatId, userMessage, answer, quota]
+      properties:
+        chatId: { type: string }
+        userMessage: { $ref: '#/components/schemas/Message' }
+        answer: { $ref: '#/components/schemas/Message' }
+        quota: { $ref: '#/components/schemas/Quota' }
 
     Chat:
       type: object
-      required: [chatId, tool, title, subject, createdAt, updatedAt, messageCount]
+      required: [chatId, tool, title, subject, updatedAt, messageCount]
       properties:
         chatId: { type: string }
         tool: { $ref: '#/components/schemas/StudyTool' }
         title: { type: string }
         subject:
           type: string
-          description: Free text, not the `Subject` enum. See `POST /chats`.
-        createdAt: { type: string, format: date-time }
+          description: Free text, a display label. Not the `Subject` enum.
         updatedAt: { type: string, format: date-time }
         messageCount: { type: integer }
 
     Message:
       type: object
-      required: [messageId, chatId, role, createdAt]
+      required: [messageId, role]
       properties:
         messageId: { type: string }
-        chatId: { type: string }
         role: { type: string, enum: [USER, ASSISTANT] }
         text:
           type: [string, 'null']
-          description: The question, for a `USER` message. Null for an `ASSISTANT` message.
+          description: The question, for a `USER` message. Absent for an `ASSISTANT` message.
         blocks:
           type: [array, 'null']
-          description: The answer, for an `ASSISTANT` message. Null for a `USER` message.
+          description: The answer, for an `ASSISTANT` message. Absent for a `USER` message.
           items: { $ref: '#/components/schemas/AnswerBlock' }
         attachment:
           oneOf:
@@ -875,9 +725,8 @@ components:
 
     AnswerBlock:
       description: |
-        One line of an answer. Mirrors the `AnswerBlock` sealed interface: replies are structured
-        rather than one blob of prose, which is what makes them skimmable and what lets the
-        select-text screen re-render the same answer at reading size.
+        One line of an answer. Plain text, not Markdown: the app has no Markdown renderer, so `**bold**`
+        would show as asterisks. Mirrors the `AnswerBlock` sealed interface.
       oneOf:
         - $ref: '#/components/schemas/ParagraphBlock'
         - $ref: '#/components/schemas/BulletBlock'
@@ -906,84 +755,56 @@ components:
 
     Attachment:
       type: object
-      required: [source, fileName, mimeType, sizeBytes]
+      required: [fileName, mimeType, sizeBytes]
       properties:
-        source: { $ref: '#/components/schemas/ScanSource' }
         fileName: { type: string }
-        mimeType: { type: string }
-        sizeBytes: { type: integer, format: int64 }
-        downloadUrl:
+        mimeType:
+          type: string
+          enum:
+            - image/jpeg
+            - application/pdf
+            - application/vnd.openxmlformats-officedocument.wordprocessingml.document
+        sizeBytes: { type: integer, format: int64, maximum: 20971520 }
+        url:
           type: [string, 'null']
           format: uri
-          description: Set on read. Points at `GET /messages/{messageId}/attachment`.
+          description: |
+            Set when a chat is read. A short-lived signed link, valid for about ten minutes. The app
+            fetches the chat again for fresh ones.
 
-    AskPayload:
+    # ---- App -------------------------------------------------------------------
+
+    Config:
       type: object
-      description: The JSON part of the multipart send.
-      required: [question]
+      required: [minAppVersion, latestAppVersion, maintenance, urls, tools]
       properties:
-        question:
-          type: string
-          minLength: 1
-          maxLength: 8000
-          description: May be empty-ish only if a file is attached; otherwise at least one character.
-        tool:
-          $ref: '#/components/schemas/StudyTool'
-        subject:
-          type: string
-          description: Overrides the chat's subject for this question only.
-        attachment:
-          description: Metadata for the `file` part. Omit when no file is sent.
-          oneOf:
-            - $ref: '#/components/schemas/Attachment'
-            - type: 'null'
+        minAppVersion: { type: string, examples: ["1.0.0"] }
+        latestAppVersion: { type: string, examples: ["1.2.0"] }
+        maintenance:
+          type: object
+          required: [active]
+          properties:
+            active: { type: boolean }
+            message: { type: [string, 'null'] }
+        urls:
+          type: object
+          properties:
+            terms: { type: string, format: uri }
+            privacy: { type: string, format: uri }
+            support: { type: string, format: uri }
+            accountDeletion: { type: string, format: uri }
+        freeDailyLimit: { type: integer }
+        tools:
+          type: array
+          items:
+            type: object
+            required: [tool, enabled]
+            properties:
+              tool: { $ref: '#/components/schemas/StudyTool' }
+              enabled: { type: boolean }
+              isNew: { type: boolean }
 
-    AnswerResponse:
-      type: object
-      required: [userMessage, answer, quota]
-      properties:
-        userMessage: { $ref: '#/components/schemas/Message' }
-        answer: { $ref: '#/components/schemas/Message' }
-        quota: { $ref: '#/components/schemas/Quota' }
-
-    # ---- Entitlement and quota ------------------------------------------------
-
-    Entitlement:
-      type: object
-      required: [plan]
-      description: |
-        Read-only to the client. The server is the sole writer, and only after verifying a Play
-        purchase token. Nothing in the app may grant Pro locally.
-      properties:
-        plan: { type: string, enum: [FREE, PRO] }
-        productId:
-          type: [string, 'null']
-          enum: [premium_yearly, premium_monthly, null]
-        expiresAt: { type: [string, 'null'], format: date-time }
-        autoRenewing: { type: [boolean, 'null'] }
-        inGracePeriod:
-          type: [boolean, 'null']
-          description: Play is retrying payment. Keep access and prompt the user to fix it.
-        source: { type: [string, 'null'], enum: [PLAY, PROMO, null] }
-
-    Quota:
-      type: object
-      required: [unlimited]
-      description: |
-        The free tier's daily question limit — the thing the paywall's "No daily limit on AI chats"
-        is promising to remove. The server owns this counter; the client only displays it.
-      properties:
-        unlimited:
-          type: boolean
-          description: True for a Pro entitlement, in which case the other fields are null.
-        limit: { type: [integer, 'null'] }
-        remaining: { type: [integer, 'null'] }
-        resetsAt:
-          type: [string, 'null']
-          format: date-time
-          description: When `remaining` returns to `limit`. Midnight UTC unless you choose otherwise.
-
-    # ---- Errors ---------------------------------------------------------------
+    # ---- Errors ----------------------------------------------------------------
 
     Error:
       type: object
@@ -992,7 +813,7 @@ components:
         error: { $ref: '#/components/schemas/ErrorBody' }
         requestId:
           type: string
-          description: Echoed in logs. Worth showing in a support screen.
+          description: Echoed in logs. Worth showing on a support screen.
 
     ErrorBody:
       type: object
@@ -1001,16 +822,15 @@ components:
         code:
           type: string
           description: |
-            Stable and machine-readable. The client switches on this, never on `message`.
-            See the error table in README.md for what the app does with each one.
+            Stable and machine-readable. The app switches on this, never on `message`. See the error
+            table in README.md for what the app does with each one.
           enum:
             - UNAUTHENTICATED
             - TOKEN_EXPIRED
-            - INVALID_GOOGLE_TOKEN
-            - REFRESH_TOKEN_REUSED
-            - FORBIDDEN
+            - INVALID_ID_TOKEN
             - NOT_FOUND
             - VALIDATION_FAILED
+            - UNKNOWN_TOOL
             - QUOTA_EXCEEDED
             - RATE_LIMITED
             - FILE_TOO_LARGE
@@ -1021,19 +841,17 @@ components:
             - INTERNAL
         message:
           type: string
-          description: English, for logs and developers. Never shown to a student — the app has its own strings.
+          description: English, for logs and developers. Never shown to a student, because the app has its own strings.
         details:
           type: [object, 'null']
           additionalProperties: true
 
   responses:
     Unauthenticated:
-      description: Missing, malformed or expired access token. Refresh once, then retry.
-      content:
-        application/json:
-          schema: { $ref: '#/components/schemas/Error' }
-    InvalidGoogleToken:
-      description: The Google ID token failed verification.
+      description: |
+        Missing, malformed or expired Firebase ID token (`UNAUTHENTICATED` or `TOKEN_EXPIRED`), or one
+        that failed verification (`INVALID_ID_TOKEN`). The app asks Firebase for a fresh token and tries
+        once more; a second 401 signs the person out.
       content:
         application/json:
           schema: { $ref: '#/components/schemas/Error' }
@@ -1043,31 +861,33 @@ components:
         application/json:
           schema: { $ref: '#/components/schemas/Error' }
     ValidationFailed:
-      description: The request body did not validate.
+      description: The request did not validate (`VALIDATION_FAILED`), or the tool word is unknown (`UNKNOWN_TOOL`).
       content:
         application/json:
           schema: { $ref: '#/components/schemas/Error' }
     QuotaExceeded:
-      description: The daily free limit is used up. The client opens the Pro paywall.
+      description: |
+        `QUOTA_EXCEEDED`: the daily free limit is used up and the app opens the Pro screen. Also used,
+        with the code `RATE_LIMITED`, when the app should just wait and honour `Retry-After`.
       headers:
         Retry-After:
           schema: { type: integer }
-          description: Seconds until the quota resets.
+          description: Seconds until the quota resets, or until a rate limit lifts.
       content:
         application/json:
           schema: { $ref: '#/components/schemas/Error' }
     FileTooLarge:
-      description: Over 20 MB. Renders `attach_error_too_large`.
+      description: Over 20 MB.
       content:
         application/json:
           schema: { $ref: '#/components/schemas/Error' }
     UnsupportedFileType:
-      description: Not a JPEG, PDF or .docx. Renders `attach_error_unsupported`.
+      description: Not a JPEG, PDF or .docx.
       content:
         application/json:
           schema: { $ref: '#/components/schemas/Error' }
     FileUnreadable:
-      description: The file was received but could not be parsed. Renders `attach_error_unreadable`.
+      description: The file was received but could not be parsed.
       content:
         application/json:
           schema: { $ref: '#/components/schemas/Error' }

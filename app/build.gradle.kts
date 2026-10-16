@@ -2,24 +2,25 @@ plugins {
     alias(libs.plugins.android.application)
     alias(libs.plugins.kotlin.compose)
     alias(libs.plugins.kotlin.serialization)
-    alias(libs.plugins.ksp)
-    alias(libs.plugins.androidx.room)
     alias(libs.plugins.google.services)
     alias(libs.plugins.firebase.crashlytics)
 }
 
 android {
-    namespace = "com.aitutor.chatbot.app"
+    namespace = "com.askylix.app"
     compileSdk {
         version = release(37)
     }
 
     defaultConfig {
-        applicationId = "com.aitutor.chatbot.app"
+        applicationId = "com.askylix.app"
         minSdk = 26
         targetSdk = 37
         versionCode = 1
         versionName = "1.0"
+
+        val apiBaseUrl = (project.findProperty("apiBaseUrl") as String?) ?: "https://askylix.tsdemo.site/v1/"
+        buildConfigField("String", "API_BASE_URL", "\"$apiBaseUrl\"")
 
         testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"
     }
@@ -37,12 +38,8 @@ android {
     }
     buildFeatures {
         compose = true
+        buildConfig = true
     }
-}
-
-// Room's generated schemas, so a future migration can be written against a known starting point.
-room {
-    schemaDirectory("$projectDir/schemas")
 }
 
 dependencies {
@@ -74,18 +71,23 @@ dependencies {
     implementation(libs.androidx.navigation.compose)
     implementation(libs.kotlinx.serialization.json)
 
-    // Local storage. Room keeps conversations on the device; DataStore holds the settings.
-    implementation(libs.androidx.room.runtime)
-    implementation(libs.androidx.room.ktx)
-    ksp(libs.androidx.room.compiler)
+    // The API. Retrofit turns the interface into calls, OkHttp carries them, and the converter reads
+    // the JSON with the same serialization library the rest of the app uses.
+    implementation(libs.retrofit)
+    implementation(libs.retrofit.kotlinx.serialization)
+    implementation(libs.okhttp)
+    debugImplementation(libs.okhttp.logging)
+
+    // Local storage: DataStore holds the settings and the profile. Conversations are not stored on the
+    // phone at all; the server is their only copy.
     implementation(libs.androidx.datastore.preferences)
 
     testImplementation(libs.junit)
+    testImplementation(libs.okhttp.mockwebserver)
     androidTestImplementation(platform(libs.androidx.compose.bom))
     androidTestImplementation(libs.androidx.compose.ui.test.junit4)
     androidTestImplementation(libs.androidx.espresso.core)
     androidTestImplementation(libs.androidx.junit)
-    androidTestImplementation(libs.androidx.room.testing)
     debugImplementation(libs.androidx.compose.ui.test.manifest)
     debugImplementation(libs.androidx.compose.ui.tooling)
 }

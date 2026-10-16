@@ -165,6 +165,14 @@
     <string name="nav_history">History</string>
     <string name="nav_profile">Profile</string>
 
+    <!-- Deleting the account -->
+    <string name="profile_delete_account">Delete account</string>
+    <string name="profile_delete_title">Delete your account?</string>
+    <string name="profile_delete_body">Your profile and chats are deleted right away and erased for good after 30 days. A Google Play subscription is not cancelled by this. Cancel it in Google Play to stop charges.</string>
+    <string name="profile_delete_confirm">Delete account</string>
+    <string name="profile_delete_failed">Couldn\'t delete your account. Check your connection and try again.</string>
+    <string name="profile_delete_subscription">Your Google Play subscription is still active. Cancel it in Google Play to stop charges.</string>
+
     <!-- Home -->
     <string name="home_greeting_morning">Good morning 👋</string>
     <string name="home_assistant_badge">AI Study Assistant</string>
@@ -185,7 +193,6 @@
     <string name="home_see_all">See all</string>
     <string name="home_activity_title">Recent Activity</string>
     <string name="home_view_all">View all</string>
-
 
     <!-- Study tools -->
     <string name="tool_chatbot">AI Chatbot</string>
@@ -256,19 +263,12 @@
 
     <!-- Placeholder history, replaced by the database in a later phase -->
     <string name="history_1_title">Solved Algebra Homework</string>
-    <string name="history_1_detail">x² − 5x + 6 = 0 · 5 steps</string>
     <string name="history_2_title">Summarized Biology Notes</string>
-    <string name="history_2_detail">Cell division, Ch. 4 · 6 key points</string>
     <string name="history_3_title">Why does the Moon have phases?</string>
-    <string name="history_3_detail">8 messages · Astronomy</string>
     <string name="history_4_title">Explained Photosynthesis</string>
-    <string name="history_4_detail">Light-dependent reactions, simplified</string>
     <string name="history_5_title">Integration by parts</string>
-    <string name="history_5_detail">∫ x·eˣ dx · 4 steps</string>
     <string name="history_6_title">Grammar correction</string>
-    <string name="history_6_detail">History essay draft · 14 fixes</string>
     <string name="history_7_title">Causes of World War I</string>
-    <string name="history_7_detail">5 paragraphs · 820 words</string>
 
     <!-- Profile tab -->
     <string name="profile_default_name">Student</string>
@@ -310,7 +310,6 @@
     <string name="leave_title">Go back now?</string>
     <string name="leave_stay">Stay</string>
     <string name="leave_confirm">Go back</string>
-    <string name="leave_chat_body">Your answer is still on its way. Your question will stay in the chat, but the answer won\'t arrive if you go back now.</string>
     <string name="leave_attach_body">Your file is still being added. If you go back now, it won\'t be attached.</string>
     <string name="leave_signin_body">You\'re still being signed in. If you go back now, you may need to sign in again.</string>
     <string name="profile_version">Version %1$s</string>
@@ -333,6 +332,9 @@
     <!-- Attachment failures, each said plainly rather than as one catch-all -->
     <string name="attach_error_too_large">That file is larger than %1$s. Try a smaller one.</string>
     <string name="attach_error_unreadable">That file could not be read.</string>
+    <string name="attach_error_password">That file is password protected. Remove the password and try again.</string>
+    <string name="attach_error_corrupt">That file looks damaged and can\'t be opened. Try another copy.</string>
+    <string name="attach_error_empty">That file is empty.</string>
     <string name="attach_error_unsupported">Only PDF and .docx documents can be attached.</string>
     <string name="attach_error_no_camera">No camera app was found on this device.</string>
     <string name="chat_answer_from">%1$s answer</string>
@@ -353,6 +355,81 @@
     <string name="chat_reading_voice_value">Nova</string>
     <string name="chat_report_answer">Report answer</string>
     <string name="chat_was_helpful">Was this helpful?</string>
+
+    <!-- Chat: when a question, a file or a change could not go through -->
+    <string name="chat_error_offline">Couldn\'t send. Check your connection and try again.</string>
+    <string name="chat_error_quota">You\'ve used today\'s free questions.</string>
+    <string name="chat_error_rate_limited">Too many requests. Wait a moment and try again.</string>
+    <string name="chat_error_tool_off">This tool isn\'t available right now.</string>
+    <string name="chat_error_sign_in">Sign in to continue.</string>
+    <string name="chat_error_deleted">This chat was deleted.</string>
+    <string name="chat_error_no_answer">No answer could be produced. Your question was saved. Tap Try again.</string>
+    <string name="chat_error_rename">Couldn\'t rename the chat. Try again.</string>
+    <string name="chat_error_delete">Couldn\'t delete the chat. Check your connection and try again.</string>
+    <string name="chat_error_rate">Couldn\'t save your rating.</string>
+    <string name="attach_error_download">Couldn\'t download that file. Try again.</string>
+    <string name="settings_error_language">Couldn\'t change the language. Check your connection and try again.</string>
+    <string name="settings_error_profile">Couldn\'t save your changes. Check your connection and try again.</string>
+    <string name="setup_error_save">Couldn\'t save your answers. Check your connection and try again.</string>
+    <string name="signin_error_server">You signed in with Google, but the AI Tutor server couldn\'t be reached. Try again.</string>
+
+    <!-- Launch gate: forced update and maintenance -->
+    <string name="gate_update_badge">New update available</string>
+    <string name="gate_update_chip_faster">Faster answers</string>
+    <string name="gate_update_chip_scanning">Better scanning</string>
+    <string name="gate_update_chip_security">Extra security</string>
+    <string name="gate_update_title">Update to keep learning</string>
+    <string name="gate_update_body">This version of %1$s is no longer supported. Get the latest version to continue. Your chats, notes and progress stay safe.</string>
+    <string name="gate_update_point_free">Free</string>
+    <string name="gate_update_point_quick">Takes a minute</string>
+    <string name="gate_update_point_saved">Progress saved</string>
+    <string name="gate_update_action">Update now</string>
+    <string name="gate_update_store_hint">You’ll be taken to Google Play</string>
+    <string name="gate_maintenance_title">We\'ll be back soon</string>
+    <string name="gate_maintenance_body">AI Tutor is being worked on right now. Try again in a little while.</string>
+    <string name="gate_retry">Try again</string>
+    <string name="session_expired">Please sign in again.</string>
+    <string name="setup_done_saving">Saving…</string>
+
+    <string name="profile_sign_in">Sign in with Google</string>
+
+    <!-- Home -->
+    <string name="home_quota_left">%1$d of %2$d left today</string>
+    <string name="home_quota_unlimited">Unlimited</string>
+
+    <!-- History -->
+    <string name="refreshing">Refreshing…</string>
+    <string name="history_show_more">Show more</string>
+    <string name="history_load_error">Couldn\'t load your chats.</string>
+    <string name="history_load_offline">No connection. Couldn\'t load your chats.</string>
+    <string name="history_signed_out_title">Sign in to see your chats</string>
+    <string name="history_signed_out_body">Your conversations are saved to your account, so they are here on every device you sign in on.</string>
+    <string name="history_signed_out_action">Sign in with Google</string>
+    <string name="cd_clear_search">Clear search</string>
+
+    <!-- Loading and connection -->
+    <string name="offline_note">No connection</string>
+    <string name="chat_still_working">Still working on it…</string>
+    <string name="chat_error_timeout">That took too long. Try again.</string>
+    <string name="home_load_error">Couldn\'t refresh. Pull down to try again.</string>
+    <string name="home_load_offline">No connection. Pull down to try again.</string>
+    <string name="loading">Loading…</string>
+    <string name="loading_still">Still loading…</string>
+    <string name="chat_loading_older">Loading earlier messages…</string>
+    <string name="chat_try_again">Try again</string>
+    <string name="chat_load_error">Couldn\'t load this chat.</string>
+    <string name="chat_load_offline">No connection. Couldn\'t load this chat.</string>
+    <string name="attach_downloading">Downloading…</string>
+    <string name="attach_downloading_percent">Downloading… %1$d%%</string>
+    <string name="attach_error_no_viewer">No app on this phone can open that file.</string>
+
+    <!-- Sign in to continue (the prompt shown when a signed-out person tries to ask or to subscribe) -->
+    <string name="signin_prompt_title">Sign in to continue</string>
+    <string name="signin_prompt_send_body">Sign in with Google to ask questions. Your question stays where it is.</string>
+    <string name="signin_prompt_buy_body">Sign in with Google to subscribe, so your Pro plan stays with your account on every device.</string>
+    <string name="signin_prompt_history_body">Sign in with Google to see your chats here, on every device you use.</string>
+    <string name="signin_prompt_continue">Continue with Google</string>
+    <string name="signin_prompt_not_now">Not now</string>
 
     <!-- Chat menu -->
     <string name="chat_menu_new">New chat</string>
@@ -436,8 +513,7 @@
 
     <!-- Chat, before the first message and when a request fails -->
     <string name="chat_empty_hint">Type a question below to get started.</string>
-    <string name="chat_error_no_api">No AI service is connected yet, so answers can\'t be generated. Your question has been saved.</string>
-    <string name="chat_error_generic">That didn\'t go through. Your question has been saved — try sending again.</string>
+    <string name="chat_error_generic">That didn\'t go through. Try again.</string>
     <!-- Pro plans -->
     <string name="pro_title">Study without limits</string>
     <string name="pro_subtitle">Unlock every AI tool for every subject.</string>
